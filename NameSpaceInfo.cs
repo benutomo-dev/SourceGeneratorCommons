@@ -1,5 +1,4 @@
-﻿
-namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons;
 
 class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
 {
