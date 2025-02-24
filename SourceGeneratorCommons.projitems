@@ -9,5 +9,18 @@
     <Import_RootNamespace>SourceGeneratorCommons</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)EquatableArray.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HashCode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ITypeContainer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NameSpaceInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SemanticModelExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SourceBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PropertySymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.Appender.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.IsAssignableTo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeDefinitionInfo.cs" />
   </ItemGroup>
 </Project>
