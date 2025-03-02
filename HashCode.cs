@@ -42,7 +42,7 @@ internal class HashCode
 
     public static int Combine<T1>(T1 value1)
     {
-        HashCode hashCode = new HashCode();
+        var hashCode = new HashCode();
         hashCode.Add(value1);
         return hashCode.ToHashCode();
     }

@@ -5,19 +5,19 @@ namespace SourceGeneratorCommons;
 
 internal static class SemanticModelExtensions
 {
-    public static ImmutableArray<IMethodSymbol> LookupExtensionMethods(this SemanticModel semanticModel, int position, string? name = null, ITypeSymbol? recieverType = null, CancellationToken cancellationToken = default)
+    public static ImmutableArray<IMethodSymbol> LookupExtensionMethods(this SemanticModel semanticModel, int position, string? name = null, ITypeSymbol? receiverType = null, CancellationToken cancellationToken = default)
     {
         var extensionMethods = ImmutableArray.CreateBuilder<IMethodSymbol>();
 
         var enclosingSymbol = semanticModel.GetEnclosingSymbol(position, cancellationToken);
 
-        ITypeSymbol? eclosingTypeSymbol = enclosingSymbol switch
+        ITypeSymbol? enclosingTypeSymbol = enclosingSymbol switch
         {
             ITypeSymbol => (ITypeSymbol)enclosingSymbol,
             _ => enclosingSymbol?.ContainingType,
         };
 
-        if (eclosingTypeSymbol is null)
+        if (enclosingTypeSymbol is null)
         {
             return ImmutableArray<IMethodSymbol>.Empty;
         }
@@ -29,7 +29,7 @@ internal static class SemanticModelExtensions
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            extractExtensionMethods(semanticModel, extensionMethods, typeSymbol, eclosingTypeSymbol, name, recieverType, cancellationToken);
+            extractExtensionMethods(semanticModel, extensionMethods, typeSymbol, enclosingTypeSymbol, name, receiverType, cancellationToken);
         }
 
         foreach (var importScope in semanticModel.GetImportScopes(position, cancellationToken))
@@ -49,7 +49,7 @@ internal static class SemanticModelExtensions
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    extractExtensionMethods(semanticModel, extensionMethods, typeSymbol, eclosingTypeSymbol, name, recieverType, cancellationToken);
+                    extractExtensionMethods(semanticModel, extensionMethods, typeSymbol, enclosingTypeSymbol, name, receiverType, cancellationToken);
                 }
             }
         }
@@ -65,7 +65,7 @@ internal static class SemanticModelExtensions
             return extensionMethods.ToImmutable();
         }
 
-        static void extractExtensionMethods(SemanticModel semanticModel, ImmutableArray<IMethodSymbol>.Builder extensionMethods, INamedTypeSymbol extensionMethodSourceTypeSymbol, ITypeSymbol? enclosingTypeSymbolOfUsePosition, string? name, ITypeSymbol? recieverType, CancellationToken cancellationToken)
+        static void extractExtensionMethods(SemanticModel semanticModel, ImmutableArray<IMethodSymbol>.Builder extensionMethods, INamedTypeSymbol extensionMethodSourceTypeSymbol, ITypeSymbol? enclosingTypeSymbolOfUsePosition, string? name, ITypeSymbol? receiverType, CancellationToken cancellationToken)
         {
             if (extensionMethodSourceTypeSymbol is not { MightContainExtensionMethods: true })
             {
@@ -98,7 +98,7 @@ internal static class SemanticModelExtensions
                     }
                 }
 
-                if (recieverType is null)
+                if (receiverType is null)
                 {
                     // レシーバーの型が指定されていない場合はここで確定
 
@@ -106,7 +106,7 @@ internal static class SemanticModelExtensions
                     continue;
                 }
 
-                if (recieverType.IsAssignableTo(methodSymbol.Parameters[0].Type))
+                if (receiverType.IsAssignableTo(methodSymbol.Parameters[0].Type))
                 {
                     // 拡張メソッドの第1引数(擬似this)の型にレシーバーが代入可能ならば
                     // レシーバーに対する拡張メソッドとして機能する

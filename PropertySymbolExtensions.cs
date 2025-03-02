@@ -24,14 +24,14 @@ internal static partial class PropertySymbolExtensions
                     continue;
                 }
 
-                foreach (var accesorDeclarationSyntax in propertyDeclarationSyntax.AccessorList.Accessors)
+                foreach (var accessorDeclarationSyntax in propertyDeclarationSyntax.AccessorList.Accessors)
                 {
-                    if (accesorDeclarationSyntax.Body is not null)
+                    if (accessorDeclarationSyntax.Body is not null)
                     {
                         return false;
                     }
 
-                    if (accesorDeclarationSyntax.ExpressionBody is not null)
+                    if (accessorDeclarationSyntax.ExpressionBody is not null)
                     {
                         return false;
                     }
@@ -49,14 +49,14 @@ internal static partial class PropertySymbolExtensions
                     continue;
                 }
 
-                foreach (var accesorDeclarationSyntax in indexerDeclarationSyntax.AccessorList.Accessors)
+                foreach (var accessorDeclarationSyntax in indexerDeclarationSyntax.AccessorList.Accessors)
                 {
-                    if (accesorDeclarationSyntax.Body is not null)
+                    if (accessorDeclarationSyntax.Body is not null)
                     {
                         return false;
                     }
 
-                    if (accesorDeclarationSyntax.ExpressionBody is not null)
+                    if (accessorDeclarationSyntax.ExpressionBody is not null)
                     {
                         return false;
                     }
