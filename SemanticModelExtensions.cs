@@ -106,7 +106,7 @@ internal static class SemanticModelExtensions
                     continue;
                 }
 
-                if (receiverType.IsAssignableTo(methodSymbol.Parameters[0].Type))
+                if (receiverType.IsAssignableTo(methodSymbol.Parameters[0].Type, semanticModel.Compilation))
                 {
                     // 拡張メソッドの第1引数(擬似this)の型にレシーバーが代入可能ならば
                     // レシーバーに対する拡張メソッドとして機能する
