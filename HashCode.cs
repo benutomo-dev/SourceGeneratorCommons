@@ -1,5 +1,6 @@
 ﻿namespace System;
 
+#if !NETCOREAPP2_0_OR_GREATER
 internal class HashCode
 {
     private const int InitialValue = 871247934;
@@ -52,3 +53,4 @@ internal class HashCode
     public override int GetHashCode() => base.GetHashCode();
 #pragma warning restore CS0809 // 旧形式のメンバーが、旧形式でないメンバーをオーバーライドします
 }
+#endif

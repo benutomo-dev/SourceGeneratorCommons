@@ -4,9 +4,12 @@ using System.Text;
 
 namespace SourceGeneratorCommons;
 
+/// <summary>
+/// 型定義
+/// </summary>
 class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
 {
-    public ITypeContainer Container { get; init; }
+    public ITypeContainer? Container { get; init; }
 
     public string Name { get; init; }
 
@@ -18,26 +21,24 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
 
     public TypeCategory TypeCategory { get; init; }
 
-    public bool IsNullableAnnotated { get; init; }
-
-    public ImmutableArray<string> GenericTypeArgs { get; init; }
+    public ImmutableArray<GenericTypeParam> GenericTypeParams { get; init; }
 
     public string? NameSpace { get; }
 
-    public string NameWithGenericArgs
+    public string NameWithGenericParams
     {
         get
         {
             if (_nameWithGenericArgs is not null)
                 return _nameWithGenericArgs;
 
-            if (GenericTypeArgs.IsEmpty)
+            if (GenericTypeParams.IsEmpty)
             {
                 _nameWithGenericArgs = Name;
             }
             else
             {
-                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeArgs)}>";
+                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeParams.Select(v => v.Name))}>";
             }
 
             return _nameWithGenericArgs;
@@ -51,7 +52,10 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
             if (_fullName is not null)
                 return _fullName;
 
-            _fullName = $"{Container.FullName}.{NameWithGenericArgs}";
+            if (Container is null)
+                _fullName = NameWithGenericParams;
+            else
+                _fullName = $"{Container.FullName}.{NameWithGenericParams}";
 
             return _fullName;
         }
@@ -61,16 +65,15 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
 
     public string? _fullName;
 
-    public TypeDefinitionInfo(ITypeContainer container, string name, bool isStatic, bool isReadOnly, bool isRef, TypeCategory typeCategory, bool isNullableAnnotated, ImmutableArray<string> genericTypeArgs)
+    public TypeDefinitionInfo(ITypeContainer? container, string name, bool isStatic, bool isReadOnly, bool isRef, TypeCategory typeCategory, ImmutableArray<GenericTypeParam> genericTypeParams)
     {
-        Container = container ?? throw new ArgumentNullException(nameof(container));
+        Container = container;
         Name = name ?? throw new ArgumentNullException(nameof(name));
         IsStatic = isStatic;
         IsReadOnly = isReadOnly;
         IsRef = isRef;
         TypeCategory = typeCategory;
-        IsNullableAnnotated = isNullableAnnotated;
-        GenericTypeArgs = genericTypeArgs;
+        GenericTypeParams = genericTypeParams;
 
         var rootTypeDefinition = this;
         while (rootTypeDefinition.Container is TypeDefinitionInfo parent)
@@ -87,8 +90,7 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
               typeDefinitionInfo.IsReadOnly,
               typeDefinitionInfo.IsRef,
               typeDefinitionInfo.TypeCategory,
-              typeDefinitionInfo.IsNullableAnnotated,
-              typeDefinitionInfo.GenericTypeArgs
+              typeDefinitionInfo.GenericTypeParams
               )
     {
     }
@@ -106,14 +108,14 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
                 if (typeDefinitionInfo.Container is not null)
                 {
                     append(builder, typeDefinitionInfo.Container);
-                    builder.Append(".");
+                    builder.Append('.');
                 }
 
                 builder.Append(typeDefinitionInfo.Name);
 
-                if (typeDefinitionInfo.GenericTypeArgs.Length > 0)
+                if (typeDefinitionInfo.GenericTypeParams.Length > 0)
                 {
-                    foreach (var  genericArgument in typeDefinitionInfo.GenericTypeArgs)
+                    foreach (var  genericArgument in typeDefinitionInfo.GenericTypeParams)
                     {
                         builder.Append('_');
                         builder.Append(genericArgument);
@@ -134,28 +136,26 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
     public bool Equals(TypeDefinitionInfo? other)
     {
         return other is not null &&
-               EqualityComparer<ITypeContainer>.Default.Equals(Container, other.Container) &&
+               EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container) &&
                Name == other.Name &&
                IsStatic == other.IsStatic &&
                IsReadOnly == other.IsReadOnly &&
                IsRef == other.IsRef &&
                TypeCategory == other.TypeCategory &&
-               IsNullableAnnotated == other.IsNullableAnnotated &&
-               GenericTypeArgs.SequenceEqual(other.GenericTypeArgs);
+               GenericTypeParams.SequenceEqual(other.GenericTypeParams);
     }
 
     public override int GetHashCode()
     {
-        HashCode hash = new HashCode();
+        var hash = new HashCode();
         hash.Add(Container);
         hash.Add(Name);
         hash.Add(IsStatic);
         hash.Add(IsReadOnly);
         hash.Add(IsRef);
         hash.Add(TypeCategory);
-        hash.Add(IsNullableAnnotated);
-        hash.Add(GenericTypeArgs.Length);
-        foreach (var args in GenericTypeArgs)
+        hash.Add(GenericTypeParams.Length);
+        foreach (var args in GenericTypeParams)
             hash.Add(args);
         hash.Add(NameSpace);
         return hash.ToHashCode();

@@ -10,6 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)EquatableArray.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GenericConstraintTypeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GenericTypeConstraints.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GenericTypeParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ITypeContainer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameSpaceInfo.cs" />
@@ -20,7 +23,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.IsAssignableTo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeReferenceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeSymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeDefinitionInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
 </Project>

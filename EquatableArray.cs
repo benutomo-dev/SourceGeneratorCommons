@@ -29,8 +29,14 @@ public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<
         return hashCode.ToHashCode();
     }
 
+    public override bool Equals(object? obj) => obj is EquatableArray<T> other && Equals(other);
+
     public bool Equals(EquatableArray<T> other)
     {
         return Values.SequenceEqual(other.Values);
     }
+
+    public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);
+
+    public static bool operator !=(EquatableArray<T> left, EquatableArray<T> right) => !left.Equals(right);
 }

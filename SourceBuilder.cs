@@ -16,7 +16,7 @@ internal class SourceBuilder : IDisposable
 
     private char[]? _buffer;
 
-    private int _currentIndentCount = 0;
+    private int _currentIndentCount;
 
     private SourceProductionContext _context;
 
@@ -176,17 +176,17 @@ internal class SourceBuilder : IDisposable
             });
             self.Append(namedTypeSymbol.Name);
 
-            if (namedTypeSymbol.GenericTypeArgs.Length > 0)
+            if (namedTypeSymbol.GenericTypeParams.Length > 0)
             {
                 self.Append("<");
 
-                for (int i = 0; i < namedTypeSymbol.GenericTypeArgs.Length; i++)
+                for (int i = 0; i < namedTypeSymbol.GenericTypeParams.Length; i++)
                 {
-                    var genericTypeArg = namedTypeSymbol.GenericTypeArgs[i];
+                    var genericTypeArg = namedTypeSymbol.GenericTypeParams[i];
 
-                    self.Append(genericTypeArg);
+                    self.Append(genericTypeArg.Name);
 
-                    if (i < namedTypeSymbol.GenericTypeArgs.Length - 1)
+                    if (i < namedTypeSymbol.GenericTypeParams.Length - 1)
                     {
                         self.Append(", ");
                     }
@@ -197,9 +197,9 @@ internal class SourceBuilder : IDisposable
                 var hintingTypeNameBuilder = new StringBuilder();
 
                 hintingTypeNameBuilder.Append(namedTypeSymbol.Name);
-                hintingTypeNameBuilder.Append("{");
-                hintingTypeNameBuilder.Append(string.Join("_", namedTypeSymbol.GenericTypeArgs));
-                hintingTypeNameBuilder.Append("}");
+                hintingTypeNameBuilder.Append('{');
+                hintingTypeNameBuilder.Append(string.Join("_", namedTypeSymbol.GenericTypeParams));
+                hintingTypeNameBuilder.Append('}');
             }
 
             if (isDestinationType && classDeclarationLineTail is not null)
@@ -278,8 +278,8 @@ internal class SourceBuilder : IDisposable
             if (other._sourceBuilder is null && _nestCount == 0) return this;
 
             if (_nestCount <= 0) throw new InvalidOperationException();
-            if (_sourceBuilder != other._sourceBuilder) throw new ArgumentException(nameof(other));
-            if (other._nestCount <= 0) throw new ArgumentException(nameof(other));
+            if (_sourceBuilder != other._sourceBuilder) throw new ArgumentException(null, nameof(other));
+            if (other._nestCount <= 0) throw new ArgumentException(null, nameof(other));
 
             return new _BlockEndDisposable
             {

@@ -21,9 +21,9 @@ internal static partial class TypeSymbolExtensions
         };
     }
 
-    internal static TypeDefinitionInfo BuildTypeDefinitionInfo(this ITypeSymbol typeSymbol)
+    internal static (TypeDefinitionInfo DefinitionInfo, TypeReferenceInfo ReferenceInfo) BuildTypeDefinitionInfo(this ITypeSymbol typeSymbol)
     {
-        ITypeContainer container;
+        ITypeContainer? container;
 
         if (typeSymbol.ContainingType is null)
         {
@@ -32,23 +32,13 @@ internal static partial class TypeSymbolExtensions
 
             container = new NameSpaceInfo(namespaceBuilder.ToString());
         }
+        else if (typeSymbol is ITypeParameterSymbol)
+        {
+            container = null;
+        }
         else
         {
-            container = BuildTypeDefinitionInfo(typeSymbol.ContainingType);
-        }
-
-        ImmutableArray<string> genericTypeArgs = ImmutableArray<string>.Empty;
-
-        if (typeSymbol is INamedTypeSymbol namedTypeSymbol && !namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
-        {
-            var builder = ImmutableArray.CreateBuilder<string>(namedTypeSymbol.TypeArguments.Length);
-
-            for (int i = 0; i < namedTypeSymbol.TypeArguments.Length; i++)
-            {
-                builder.Add(namedTypeSymbol.TypeArguments[i].Name);
-            }
-
-            genericTypeArgs = builder.MoveToImmutable();
+            (container, var containerReference) = BuildTypeDefinitionInfo(typeSymbol.ContainingType);
         }
 
         var typeCategory = typeSymbol.TypeKind switch
@@ -58,13 +48,100 @@ internal static partial class TypeSymbolExtensions
             _ => TypeCategory.Class,
         };
 
-        return new TypeDefinitionInfo(container, typeSymbol.Name, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType, typeCategory, typeSymbol.NullableAnnotation == NullableAnnotation.Annotated, genericTypeArgs);
+        ImmutableArray<GenericTypeParam> genericTypeParams;
+
+        ImmutableArray<ImmutableArray<TypeReferenceInfo>> typeArgs = default;
+
+        if (typeSymbol is INamedTypeSymbol namedTypeSymbol && !namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
+        {
+            var originalDefinitionTypeSymbol = namedTypeSymbol.OriginalDefinition;
+
+            var typeParamsBuilder = ImmutableArray.CreateBuilder<GenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
+
+            for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
+            {
+                var typeParamSymbol = namedTypeSymbol.TypeParameters[i];
+
+                GenericConstraintTypeCategory genericConstraintTypeCategory;
+                if (typeParamSymbol.HasReferenceTypeConstraint)
+                {
+                    if (typeParamSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
+                        genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
+                    else
+                        genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
+                }
+                else if (typeParamSymbol.HasValueTypeConstraint)
+                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
+                else if (typeParamSymbol.HasNotNullConstraint)
+                    genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
+                else if (typeParamSymbol.HasUnmanagedTypeConstraint)
+                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
+                else
+                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
+
+                var constraints = new GenericTypeConstraints
+                {
+                    TypeCategory = genericConstraintTypeCategory,
+                    HaveDefaultConstructor = typeParamSymbol.HasConstructorConstraint,
+#if CODE_ANALYSYS4_12_2_OR_GREATER
+                    AllowRefStruct = typeParamSymbol.AllowsRefLikeType,
+#endif
+                    BaseType = typeParamSymbol.BaseType?.BuildTypeDefinitionInfo().ReferenceInfo,
+                    Interfaces = typeParamSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo!).ToImmutableArray(),
+                };
+
+                var genericTypeParam = new GenericTypeParam
+                {
+                    Name = typeParamSymbol.Name,
+                    Where = constraints,
+                };
+
+                typeParamsBuilder.Add(genericTypeParam);
+            }
+
+            genericTypeParams = typeParamsBuilder.MoveToImmutable();
+
+            var typeArgsBuilder = ImmutableArray.CreateBuilder<ImmutableArray<TypeReferenceInfo>>(countTypeArgsLength(namedTypeSymbol));
+            fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
+            typeArgs = typeArgsBuilder.MoveToImmutable();
+        }
+        else
+        {
+            genericTypeParams = ImmutableArray<GenericTypeParam>.Empty;
+        }
+
+        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType, typeCategory, genericTypeParams);
+
+        var referenceInfo = new TypeReferenceInfo
+        {
+            TypeDefinition = definitionInfo,
+            IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+            TypeArgs = typeArgs.IsDefault ? ImmutableArray<ImmutableArray<TypeReferenceInfo>>.Empty : typeArgs,
+        };
+
+        return (definitionInfo, referenceInfo);
+
+        int countTypeArgsLength(INamedTypeSymbol namedTypeSymbol)
+        {
+            if (namedTypeSymbol.ContainingType is not null)
+                return countTypeArgsLength(namedTypeSymbol.ContainingType) + 1;
+            else
+                return 1;
+        }
+
+        void fillTypeArgs(ImmutableArray<ImmutableArray<TypeReferenceInfo>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
+        {
+            if (namedTypeSymbol.ContainingType is not null)
+                fillTypeArgs(typeArgsBuilder, namedTypeSymbol.ContainingType);
+
+            typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo!).ToImmutableArray());
+        }
     }
 
     internal static bool IsXSymbolImpl(ITypeSymbol? typeSymbol, string ns1, string typeName)
     {
-        Debug.Assert(!ns1.Contains("."));
-        Debug.Assert(!typeName.Contains("."));
+        Debug.Assert(!ns1.Contains('.'));
+        Debug.Assert(!typeName.Contains('.'));
 
         if (typeSymbol is null) return false;
 

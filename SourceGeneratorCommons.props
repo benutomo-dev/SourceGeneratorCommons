@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareCodeAnalysisVersionDefinitions</PrepareForBuildDependsOn>
+  </PropertyGroup>
+  <Target Name="PrepareCodeAnalysisVersionDefinitions" DependsOnTargets="ResolvePackageAssets">
+    <PropertyGroup>
+      <CodeAnalysisVersion>@(ResolvedCompileFileDefinitions->WithMetadataValue('NuGetPackageId', 'Microsoft.CodeAnalysis.CSharp')->Metadata('NuGetPackageVersion'))</CodeAnalysisVersion>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.3.1'))">$(DefineConstants);CODE_ANALYSYS4_3_1_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.4.0'))">$(DefineConstants);CODE_ANALYSYS4_4_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.5.0'))">$(DefineConstants);CODE_ANALYSYS4_5_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.6.0'))">$(DefineConstants);CODE_ANALYSYS4_6_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.7.0'))">$(DefineConstants);CODE_ANALYSYS4_7_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.8.0'))">$(DefineConstants);CODE_ANALYSYS4_8_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.9.0'))">$(DefineConstants);CODE_ANALYSYS4_9_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.10.0'))">$(DefineConstants);CODE_ANALYSYS4_10_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.11.0'))">$(DefineConstants);CODE_ANALYSYS4_11_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.12.0'))">$(DefineConstants);CODE_ANALYSYS4_12_0_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.12.2'))">$(DefineConstants);CODE_ANALYSYS4_12_2_OR_GREATER</DefineConstants>
+      <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.13.0'))">$(DefineConstants);CODE_ANALYSYS4_13_0_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+  </Target>
+</Project>
