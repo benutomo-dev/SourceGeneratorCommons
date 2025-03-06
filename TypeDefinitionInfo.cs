@@ -12,6 +12,7 @@ record class TypeDefinitionInfo(
     string Name,
     TypeCategory TypeCategory,
     ImmutableArray<GenericTypeParam> GenericTypeParams = default,
+    CSharpAccessibility Accessibility = CSharpAccessibility.Default,
     bool IsStatic = false,
     bool IsReadOnly = false,
     bool IsRef = false
@@ -102,10 +103,11 @@ record class TypeDefinitionInfo(
         var equalsResult = true
                && EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container)
                && Name == other.Name
+               && TypeCategory == other.TypeCategory
+               && Accessibility == other.Accessibility
                && IsStatic == other.IsStatic
                && IsReadOnly == other.IsReadOnly
                && IsRef == other.IsRef
-               && TypeCategory == other.TypeCategory 
                && GenericTypeParams.SequenceEqual(other.GenericTypeParams);
 
         if (equalsResult)
@@ -125,10 +127,11 @@ record class TypeDefinitionInfo(
         var hash = new HashCode();
         hash.Add(Container);
         hash.Add(Name);
+        hash.Add(TypeCategory);
+        hash.Add(Accessibility);
         hash.Add(IsStatic);
         hash.Add(IsReadOnly);
         hash.Add(IsRef);
-        hash.Add(TypeCategory);
         hash.Add(GenericTypeParams.Length);
         foreach (var args in GenericTypeParams)
             hash.Add(args);

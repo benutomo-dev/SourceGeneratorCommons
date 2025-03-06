@@ -23,7 +23,32 @@ class TypeReferenceInfo
 
         var builder = new StringBuilder();
 
-        write(builder, TypeDefinition, TypeArgs.AsSpan());
+        if (TypeDefinition is { Name: "Nullable", Container: NameSpaceInfo { Name: "System" } } && !TypeArgs.IsDefaultOrEmpty && TypeArgs.Length == 1 && TypeArgs[0].Length == 1)
+        {
+            var structTypeReference = TypeArgs[^1][0];
+
+            if (getNullableTypeKeyword(structTypeReference.TypeDefinition) is { } typeKeyword)
+                return typeKeyword;
+
+            write(builder, structTypeReference.TypeDefinition, structTypeReference.TypeArgs.AsSpan());
+            builder.Append('?');
+        }
+        else
+        {
+            if (getTypeKeyword(TypeDefinition) is { } typeKeyword)
+                return typeKeyword;
+
+            write(builder, TypeDefinition, TypeArgs.AsSpan());
+
+            if (IsNullableAnnotated)
+                builder.Append('?');
+        }
+
+        _value = builder.ToString();
+        
+
+        return _value;
+
 
         void write(StringBuilder builder, TypeDefinitionInfo typeDefinition, ReadOnlySpan<ImmutableArray<TypeReferenceInfo>> typeArgs)
         {
@@ -32,6 +57,7 @@ class TypeReferenceInfo
 
             if (typeDefinition.Container is not null)
             {
+
                 builder.Append(typeDefinition.Container.FullName);
                 builder.Append('.');
             }
@@ -54,11 +80,59 @@ class TypeReferenceInfo
             }
         }
 
-        if (IsNullableAnnotated)
-            builder.Append('?');
+        string? getNullableTypeKeyword(TypeDefinitionInfo typeDefinition)
+        {
+            if (typeDefinition.Container is NameSpaceInfo { Name: "System" })
+            {
+                switch (typeDefinition.Name)
+                {
+                    case "SByte":   return "sbyte?";
+                    case "Int16":   return "short?";
+                    case "Int32":   return "int?";
+                    case "Int64":   return "long?";
+                    case "Byte":    return "byte?";
+                    case "UInt16":  return "ushort?";
+                    case "UInt32":  return "uint?";
+                    case "UInt64":  return "ulong?";
+                    case "Single":  return "float?";
+                    case "Double":  return "double?";
+                    case "Decimal": return "decimal?";
+                    case "Char":    return "char?";
+                    case "Object":  return "object?";
+                    default:
+                        break;
+                };
+            }
 
-        _value = builder.ToString();
+            return null;
+        }
 
-        return _value;
+        string? getTypeKeyword(TypeDefinitionInfo typeDefinition)
+        {
+            if (typeDefinition.Container is NameSpaceInfo { Name: "System" })
+            {
+                switch(typeDefinition.Name)
+                {
+                    case "SByte":   return "sbyte";
+                    case "Int16":   return "short";
+                    case "Int32":   return "int";
+                    case "Int64":   return "long";
+                    case "Byte":    return "byte";
+                    case "UInt16":  return "ushort";
+                    case "UInt32":  return "uint";
+                    case "UInt64":  return "ulong";
+                    case "Single":  return "float";
+                    case "Double":  return "double";
+                    case "Decimal": return "decimal";
+                    case "Char":    return "char";
+                    case "Object":  return "object";
+                    case "Void":    return "void";
+                    default:
+                        break;
+                };
+            }
+
+            return null;
+        }
     }
 }

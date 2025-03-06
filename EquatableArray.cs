@@ -2,6 +2,23 @@
 
 namespace SourceGeneratorCommons;
 
+public static class EquatableArray
+{
+    public static EquatableArray<T> ToEquatableArray<T>(this ImmutableArray<T> array) => array;
+
+    public static EquatableArray<T> Create<T>(params ReadOnlySpan<T> values)
+    {
+        var builder = ImmutableArray.CreateBuilder<T>(values.Length);
+#if CODE_ANALYSYS4_9_0_OR_GREATER
+        builder.AddRange(values);
+#else
+        foreach (var value in values)
+            builder.Add(value);
+#endif
+        return builder.MoveToImmutable();
+    }
+}
+
 public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<EquatableArray<T>>
 {
     public ImmutableArray<T> Values { get; } = values;

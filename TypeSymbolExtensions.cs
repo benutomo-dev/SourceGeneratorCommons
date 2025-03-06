@@ -60,41 +60,7 @@ internal static partial class TypeSymbolExtensions
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
-                var typeParamSymbol = namedTypeSymbol.TypeParameters[i];
-
-                GenericConstraintTypeCategory genericConstraintTypeCategory;
-                if (typeParamSymbol.HasReferenceTypeConstraint)
-                {
-                    if (typeParamSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
-                        genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
-                    else
-                        genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
-                }
-                else if (typeParamSymbol.HasValueTypeConstraint)
-                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
-                else if (typeParamSymbol.HasNotNullConstraint)
-                    genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
-                else if (typeParamSymbol.HasUnmanagedTypeConstraint)
-                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
-                else
-                    genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
-
-                var constraints = new GenericTypeConstraints
-                {
-                    TypeCategory = genericConstraintTypeCategory,
-                    HaveDefaultConstructor = typeParamSymbol.HasConstructorConstraint,
-#if CODE_ANALYSYS4_12_2_OR_GREATER
-                    AllowRefStruct = typeParamSymbol.AllowsRefLikeType,
-#endif
-                    BaseType = typeParamSymbol.BaseType?.BuildTypeDefinitionInfo().ReferenceInfo,
-                    Interfaces = typeParamSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo!).ToImmutableArray(),
-                };
-
-                var genericTypeParam = new GenericTypeParam
-                {
-                    Name = typeParamSymbol.Name,
-                    Where = constraints,
-                };
+                var genericTypeParam = namedTypeSymbol.TypeParameters[i].BuildGenericTypeParam();
 
                 typeParamsBuilder.Add(genericTypeParam);
             }
@@ -110,7 +76,9 @@ internal static partial class TypeSymbolExtensions
             genericTypeParams = ImmutableArray<GenericTypeParam>.Empty;
         }
 
-        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
+        var accessibility = typeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, accessibility, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
 
         var referenceInfo = new TypeReferenceInfo
         {
@@ -136,6 +104,45 @@ internal static partial class TypeSymbolExtensions
 
             typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo!).ToImmutableArray());
         }
+    }
+
+    internal static GenericTypeParam BuildGenericTypeParam(this ITypeParameterSymbol typeParameterSymbol)
+    {
+        GenericConstraintTypeCategory genericConstraintTypeCategory;
+        if (typeParameterSymbol.HasReferenceTypeConstraint)
+        {
+            if (typeParameterSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
+                genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
+            else
+                genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
+        }
+        else if (typeParameterSymbol.HasValueTypeConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
+        else if (typeParameterSymbol.HasNotNullConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
+        else if (typeParameterSymbol.HasUnmanagedTypeConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
+        else
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
+
+        var constraints = new GenericTypeConstraints
+        {
+            TypeCategory = genericConstraintTypeCategory,
+            HaveDefaultConstructor = typeParameterSymbol.HasConstructorConstraint,
+#if CODE_ANALYSYS4_12_2_OR_GREATER
+            AllowRefStruct = typeParameterSymbol.AllowsRefLikeType,
+#endif
+            BaseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => !v.IsAbstract)?.BuildTypeDefinitionInfo().ReferenceInfo,
+            Interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.IsAbstract).Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo!).ToImmutableArray(),
+        };
+
+        var genericTypeParam = new GenericTypeParam
+        {
+            Name = typeParameterSymbol.Name,
+            Where = constraints,
+        };
+
+        return genericTypeParam;
     }
 
     internal static bool IsXSymbolImpl(ITypeSymbol? typeSymbol, string ns1, string typeName)
