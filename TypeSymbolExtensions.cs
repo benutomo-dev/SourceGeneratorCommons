@@ -48,9 +48,9 @@ internal static partial class TypeSymbolExtensions
             _ => TypeCategory.Class,
         };
 
-        ImmutableArray<GenericTypeParam> genericTypeParams;
+        EquatableArray<GenericTypeParam> genericTypeParams;
 
-        ImmutableArray<ImmutableArray<TypeReferenceInfo>> typeArgs = default;
+        EquatableArray<EquatableArray<TypeReferenceInfo>> typeArgs = default;
 
         if (typeSymbol is INamedTypeSymbol namedTypeSymbol && !namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
         {
@@ -67,24 +67,28 @@ internal static partial class TypeSymbolExtensions
 
             genericTypeParams = typeParamsBuilder.MoveToImmutable();
 
-            var typeArgsBuilder = ImmutableArray.CreateBuilder<ImmutableArray<TypeReferenceInfo>>(countTypeArgsLength(namedTypeSymbol));
+            var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<TypeReferenceInfo>>(countTypeArgsLength(namedTypeSymbol));
             fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
             typeArgs = typeArgsBuilder.MoveToImmutable();
         }
         else
         {
-            genericTypeParams = ImmutableArray<GenericTypeParam>.Empty;
+            genericTypeParams = EquatableArray<GenericTypeParam>.Empty;
         }
+
+        var baseType = typeSymbol.BaseType?.BuildTypeDefinitionInfo().ReferenceInfo;
+
+        var interfaces = typeSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo).ToImmutableArray().ToEquatableArray();
 
         var accessibility = typeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
-        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, accessibility, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
+        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, baseType, interfaces, accessibility, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
 
         var referenceInfo = new TypeReferenceInfo
         {
             TypeDefinition = definitionInfo,
             IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
-            TypeArgs = typeArgs.IsDefault ? ImmutableArray<ImmutableArray<TypeReferenceInfo>>.Empty : typeArgs,
+            TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<TypeReferenceInfo>>.Empty : typeArgs,
         };
 
         return (definitionInfo, referenceInfo);
@@ -97,7 +101,7 @@ internal static partial class TypeSymbolExtensions
                 return 1;
         }
 
-        void fillTypeArgs(ImmutableArray<ImmutableArray<TypeReferenceInfo>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
+        void fillTypeArgs(ImmutableArray<EquatableArray<TypeReferenceInfo>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
         {
             if (namedTypeSymbol.ContainingType is not null)
                 fillTypeArgs(typeArgsBuilder, namedTypeSymbol.ContainingType);

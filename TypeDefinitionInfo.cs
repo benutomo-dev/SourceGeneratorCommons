@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace SourceGeneratorCommons;
@@ -11,7 +10,9 @@ record class TypeDefinitionInfo(
     ITypeContainer? Container,
     string Name,
     TypeCategory TypeCategory,
-    ImmutableArray<GenericTypeParam> GenericTypeParams = default,
+    EquatableArray<GenericTypeParam> GenericTypeParams = default,
+    TypeReferenceInfo? BaseType = null,
+    EquatableArray<TypeReferenceInfo> Interfaces = default,
     CSharpAccessibility Accessibility = CSharpAccessibility.Default,
     bool IsStatic = false,
     bool IsReadOnly = false,
@@ -26,13 +27,13 @@ record class TypeDefinitionInfo(
             if (_nameWithGenericArgs is not null)
                 return _nameWithGenericArgs;
 
-            if (GenericTypeParams.IsEmpty)
+            if (GenericTypeParams.IsDefaultOrEmpty)
             {
                 _nameWithGenericArgs = Name;
             }
             else
             {
-                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeParams.Select(v => v.Name))}>";
+                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeParams.Values.Select(v => v.Name))}>";
             }
 
             return _nameWithGenericArgs;
@@ -79,7 +80,7 @@ record class TypeDefinitionInfo(
 
                 if (typeDefinitionInfo.GenericTypeParams.Length > 0)
                 {
-                    foreach (var genericArgument in typeDefinitionInfo.GenericTypeParams)
+                    foreach (var genericArgument in typeDefinitionInfo.GenericTypeParams.Values)
                     {
                         builder.Append('_');
                         builder.Append(genericArgument.Name);
@@ -108,7 +109,9 @@ record class TypeDefinitionInfo(
                && IsStatic == other.IsStatic
                && IsReadOnly == other.IsReadOnly
                && IsRef == other.IsRef
-               && GenericTypeParams.SequenceEqual(other.GenericTypeParams);
+               && BaseType == other.BaseType
+               && EqualityComparer<EquatableArray<GenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams)
+               && EqualityComparer<EquatableArray<TypeReferenceInfo>>.Default.Equals(Interfaces, other.Interfaces);
 
         if (equalsResult)
         {
@@ -127,14 +130,14 @@ record class TypeDefinitionInfo(
         var hash = new HashCode();
         hash.Add(Container);
         hash.Add(Name);
+        hash.Add(BaseType);
         hash.Add(TypeCategory);
         hash.Add(Accessibility);
         hash.Add(IsStatic);
         hash.Add(IsReadOnly);
         hash.Add(IsRef);
-        hash.Add(GenericTypeParams.Length);
-        foreach (var args in GenericTypeParams)
-            hash.Add(args);
+        hash.Add(GenericTypeParams);
+        hash.Add(Interfaces);
         return hash.ToHashCode();
     }
 }

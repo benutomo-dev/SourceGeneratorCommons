@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace SourceGeneratorCommons;
 
@@ -21,6 +22,8 @@ public static class EquatableArray
 
 public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<EquatableArray<T>>
 {
+    public static EquatableArray<T> Empty { get; } = ImmutableArray<T>.Empty.ToEquatableArray();
+
     public ImmutableArray<T> Values { get; } = values;
 
     public bool IsDefaultOrEmpty => Values.IsDefaultOrEmpty;
@@ -39,10 +42,14 @@ public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<
         return values.Values;
     }
 
+    public ReadOnlySpan<T> AsSpan() => Values.AsSpan();
+
     public override int GetHashCode()
     {
-        var hashCode = new HashCode();
+        if (Values.IsDefault)
+            return 0;
 
+        var hashCode = new HashCode();
         hashCode.Add(Values.Length);
         for (int i = 0; i < Values.Length && i < 4; i++)
             hashCode.Add(Values[i]);
@@ -56,7 +63,13 @@ public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<
 
     public bool Equals(EquatableArray<T> other)
     {
-        return Values.SequenceEqual(other.Values);
+        return (Values.IsDefault, other.Values.IsDefault) switch
+        {
+            (false, false) => Values.SequenceEqual(other.Values),
+            (true,  false) => other.Values.IsEmpty,
+            (false, true)  => Values.IsEmpty,
+            _ => true,
+        };
     }
 
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);

@@ -6,15 +6,49 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型参照
 /// </summary>
-class TypeReferenceInfo
+class TypeReferenceInfo : IEquatable<TypeReferenceInfo>
 {
-    public bool IsNullableAnnotated { get; init; }
-
     public required TypeDefinitionInfo TypeDefinition { get; init; }
 
-    public ImmutableArray<ImmutableArray<TypeReferenceInfo>> TypeArgs { get; init; }
+    public bool IsNullableAnnotated { get; init; }
+
+    public EquatableArray<EquatableArray<TypeReferenceInfo>> TypeArgs { get; init; }
 
     private string? _value;
+
+    public override bool Equals(object? obj) => obj is TypeReferenceInfo other && this.Equals(other);
+
+    public bool Equals(TypeReferenceInfo? other)
+    {
+        if (other is null)
+            return false;
+
+        if (IsNullableAnnotated != other.IsNullableAnnotated)
+            return false;
+
+        if (!EqualityComparer<TypeDefinitionInfo>.Default.Equals(TypeDefinition, other.TypeDefinition))
+            return false;
+
+        if (!EqualityComparer<EquatableArray<EquatableArray<TypeReferenceInfo>>>.Default.Equals(TypeArgs, other.TypeArgs))
+            return false;
+
+        _value ??= other._value;
+
+        other._value ??= _value;
+
+        return true;
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+
+        hashCode.Add(TypeDefinition);
+        hashCode.Add(IsNullableAnnotated);
+        hashCode.Add(TypeArgs);
+
+        return hashCode.ToHashCode();
+    }
 
     public override string ToString()
     {
@@ -50,7 +84,7 @@ class TypeReferenceInfo
         return _value;
 
 
-        void write(StringBuilder builder, TypeDefinitionInfo typeDefinition, ReadOnlySpan<ImmutableArray<TypeReferenceInfo>> typeArgs)
+        void write(StringBuilder builder, TypeDefinitionInfo typeDefinition, ReadOnlySpan<EquatableArray<TypeReferenceInfo>> typeArgs)
         {
             if (typeDefinition.Container is TypeDefinitionInfo containerType)
                 write(builder, containerType, typeArgs.Slice(0, Math.Max(0, typeArgs.Length - 1)));
@@ -64,7 +98,7 @@ class TypeReferenceInfo
 
             builder.Append(typeDefinition.Name);
 
-            var currentTypeArgs = typeArgs.Length > 0 ? typeArgs[^1] : ImmutableArray<TypeReferenceInfo>.Empty;
+            var currentTypeArgs = typeArgs.Length > 0 ? typeArgs[^1] : EquatableArray<TypeReferenceInfo>.Empty;
 
             if (currentTypeArgs.Length > 0)
             {
@@ -135,4 +169,5 @@ class TypeReferenceInfo
             return null;
         }
     }
+
 }
