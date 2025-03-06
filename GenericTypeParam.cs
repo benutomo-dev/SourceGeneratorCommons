@@ -1,8 +1,3 @@
 ﻿namespace SourceGeneratorCommons;
 
-class GenericTypeParam
-{
-    public required string Name { get; init; }
-
-    public GenericTypeConstraints? Where { get; init; }
-}
+internal record struct GenericTypeParam(string Name, GenericTypeConstraints? Where = null);

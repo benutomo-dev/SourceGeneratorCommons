@@ -1,18 +1,16 @@
-﻿using System.Collections.Immutable;
+﻿namespace SourceGeneratorCommons;
 
-namespace SourceGeneratorCommons;
+internal record struct GenericTypeConstraints(
+    GenericConstraintTypeCategory TypeCategory = GenericConstraintTypeCategory.Any,
 
-class GenericTypeConstraints
-{
-    public GenericConstraintTypeCategory TypeCategory { get; init; }
+    bool HaveDefaultConstructor = false,
 
-    public bool HaveDefaultConstructor { get; init; }
+    TypeReferenceInfo? BaseType = null,
 
-    public TypeReferenceInfo? BaseType { get; init; }
-
-    public ImmutableArray<TypeReferenceInfo> Interfaces { get; init; }
+    EquatableArray<TypeReferenceInfo> Interfaces = default
 
 #if CODE_ANALYSYS4_12_2_OR_GREATER
-    public bool AllowRefStruct { get; init; }
+    , bool AllowRefStruct = false
 #endif
-}
+);
+

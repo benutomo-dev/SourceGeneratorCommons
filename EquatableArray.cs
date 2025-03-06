@@ -6,6 +6,12 @@ public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<
 {
     public ImmutableArray<T> Values { get; } = values;
 
+    public bool IsDefaultOrEmpty => Values.IsDefaultOrEmpty;
+
+    public int Length => Values.Length;
+
+    public T this[int index] => Values[index];
+
     public static implicit operator EquatableArray<T>(ImmutableArray<T> values)
     {
         return new EquatableArray<T>(values);

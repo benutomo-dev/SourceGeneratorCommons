@@ -110,7 +110,7 @@ internal static partial class TypeSymbolExtensions
             genericTypeParams = ImmutableArray<GenericTypeParam>.Empty;
         }
 
-        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType, typeCategory, genericTypeParams);
+        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
 
         var referenceInfo = new TypeReferenceInfo
         {

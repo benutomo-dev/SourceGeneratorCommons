@@ -7,24 +7,17 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型定義
 /// </summary>
-class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
+record class TypeDefinitionInfo(
+    ITypeContainer? Container,
+    string Name,
+    TypeCategory TypeCategory,
+    ImmutableArray<GenericTypeParam> GenericTypeParams = default,
+    bool IsStatic = false,
+    bool IsReadOnly = false,
+    bool IsRef = false
+    )
+    : ITypeContainer, IEquatable<TypeDefinitionInfo>
 {
-    public ITypeContainer? Container { get; init; }
-
-    public string Name { get; init; }
-
-    public bool IsStatic { get; init; }
-
-    public bool IsReadOnly { get; init; }
-
-    public bool IsRef { get; init; }
-
-    public TypeCategory TypeCategory { get; init; }
-
-    public ImmutableArray<GenericTypeParam> GenericTypeParams { get; init; }
-
-    public string? NameSpace { get; }
-
     public string NameWithGenericParams
     {
         get
@@ -65,36 +58,6 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
 
     public string? _fullName;
 
-    public TypeDefinitionInfo(ITypeContainer? container, string name, bool isStatic, bool isReadOnly, bool isRef, TypeCategory typeCategory, ImmutableArray<GenericTypeParam> genericTypeParams)
-    {
-        Container = container;
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        IsStatic = isStatic;
-        IsReadOnly = isReadOnly;
-        IsRef = isRef;
-        TypeCategory = typeCategory;
-        GenericTypeParams = genericTypeParams;
-
-        var rootTypeDefinition = this;
-        while (rootTypeDefinition.Container is TypeDefinitionInfo parent)
-            rootTypeDefinition = parent;
-
-        NameSpace = (rootTypeDefinition.Container as NameSpaceInfo)?.FullName;
-    }
-
-    public TypeDefinitionInfo(TypeDefinitionInfo typeDefinitionInfo)
-        : this(
-              typeDefinitionInfo.Container,
-              typeDefinitionInfo.Name,
-              typeDefinitionInfo.IsStatic,
-              typeDefinitionInfo.IsReadOnly,
-              typeDefinitionInfo.IsRef,
-              typeDefinitionInfo.TypeCategory,
-              typeDefinitionInfo.GenericTypeParams
-              )
-    {
-    }
-
     public string MakeStandardHintName()
     {
         var builder = new StringBuilder(256);
@@ -115,10 +78,10 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
 
                 if (typeDefinitionInfo.GenericTypeParams.Length > 0)
                 {
-                    foreach (var  genericArgument in typeDefinitionInfo.GenericTypeParams)
+                    foreach (var genericArgument in typeDefinitionInfo.GenericTypeParams)
                     {
                         builder.Append('_');
-                        builder.Append(genericArgument);
+                        builder.Append(genericArgument.Name);
                     }
                 }
             }
@@ -131,18 +94,30 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
         }
     }
 
-    public override bool Equals(object? obj) => Equals(obj as TypeDefinitionInfo);
-
-    public bool Equals(TypeDefinitionInfo? other)
+    public virtual bool Equals(TypeDefinitionInfo? other)
     {
-        return other is not null &&
-               EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container) &&
-               Name == other.Name &&
-               IsStatic == other.IsStatic &&
-               IsReadOnly == other.IsReadOnly &&
-               IsRef == other.IsRef &&
-               TypeCategory == other.TypeCategory &&
-               GenericTypeParams.SequenceEqual(other.GenericTypeParams);
+        if (other is null)
+            return false;
+
+        var equalsResult = true
+               && EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container)
+               && Name == other.Name
+               && IsStatic == other.IsStatic
+               && IsReadOnly == other.IsReadOnly
+               && IsRef == other.IsRef
+               && TypeCategory == other.TypeCategory 
+               && GenericTypeParams.SequenceEqual(other.GenericTypeParams);
+
+        if (equalsResult)
+        {
+            other._nameWithGenericArgs ??= _nameWithGenericArgs;
+            other._fullName ??= _fullName;
+
+            _nameWithGenericArgs ??= other._nameWithGenericArgs;
+            _fullName ??= other._fullName;
+        }
+
+        return equalsResult;
     }
 
     public override int GetHashCode()
@@ -157,7 +132,6 @@ class TypeDefinitionInfo : ITypeContainer, IEquatable<TypeDefinitionInfo>
         hash.Add(GenericTypeParams.Length);
         foreach (var args in GenericTypeParams)
             hash.Add(args);
-        hash.Add(NameSpace);
         return hash.ToHashCode();
     }
 }

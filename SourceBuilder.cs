@@ -18,7 +18,9 @@ internal class SourceBuilder : IDisposable
 
     private int _currentIndentCount;
 
-    private SourceProductionContext _context;
+    private CancellationToken _cancellationToken;
+
+    private Action<string, string> _addSource;
 
     private string _hintName;
 
@@ -27,8 +29,19 @@ internal class SourceBuilder : IDisposable
     private static ConcurrentDictionary<string, int> _initialBufferSizeDictionary = new ConcurrentDictionary<string, int>();
 
     public SourceBuilder(SourceProductionContext context, string hintName)
+        :this(hintName, context.AddSource, context.CancellationToken)
     {
-        _context = context;
+    }
+
+    public SourceBuilder(IncrementalGeneratorPostInitializationContext context, string hintName)
+        : this(hintName, context.AddSource, context.CancellationToken)
+    {
+    }
+
+    public SourceBuilder(string hintName, Action<string, string> addSource, CancellationToken cancellationToken)
+    {
+        _cancellationToken = cancellationToken;
+        _addSource = addSource;
         _hintName = hintName;
 
         if (!_initialBufferSizeDictionary.TryGetValue(hintName, out var initialMinimumCapacityLength))
@@ -51,7 +64,7 @@ internal class SourceBuilder : IDisposable
 
     public void Commit()
     {
-        _context.AddSource(_hintName, SourceText);
+        _addSource(_hintName, SourceText);
 
         _initialBufferSizeDictionary.AddOrUpdate(_hintName, _length, (_, _) => _length);
 
@@ -62,7 +75,7 @@ internal class SourceBuilder : IDisposable
     {
         if (_buffer is null) throw new ObjectDisposedException(null);
 
-        _context.CancellationToken.ThrowIfCancellationRequested();
+        _cancellationToken.ThrowIfCancellationRequested();
 
         Debug.Assert(_buffer.Length < _length + requiredSize);
 
@@ -88,7 +101,7 @@ internal class SourceBuilder : IDisposable
     {
         if (_buffer is null) throw new ObjectDisposedException(null);
 
-        _context.CancellationToken.ThrowIfCancellationRequested();
+        _cancellationToken.ThrowIfCancellationRequested();
 
         if (text.Length <= 0) return;
 
@@ -145,7 +158,7 @@ internal class SourceBuilder : IDisposable
         InternalAppend("\r\n".AsSpan());
     }
 
-    public _BlockEndDisposable BeginTypeDefinitionBlock(TypeDefinitionInfo typeDefinitionInfo, string? classDeclarationLineTail)
+    public _BlockEndDisposable BeginTypeDefinitionBlock(TypeDefinitionInfo typeDefinitionInfo, string? classDeclarationLineTail = null)
     {
         return beginTypeBlock(this, typeDefinitionInfo, isDestinationType: true, classDeclarationLineTail);
 
@@ -176,7 +189,7 @@ internal class SourceBuilder : IDisposable
             });
             self.Append(namedTypeSymbol.Name);
 
-            if (namedTypeSymbol.GenericTypeParams.Length > 0)
+            if (!namedTypeSymbol.GenericTypeParams.IsDefaultOrEmpty)
             {
                 self.Append("<");
 
