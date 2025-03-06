@@ -23,6 +23,20 @@ internal static partial class TypeSymbolExtensions
 
     internal static (CsTypeDeclaration DefinitionInfo, CsTypeReference ReferenceInfo) BuildTypeDefinitionInfo(this ITypeSymbol typeSymbol)
     {
+        if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
+        {
+            var typeParamerterDeclaration = new CsTypeParameterDeclaration(typeSymbol.Name);
+
+            var referenceInfo = new CsTypeReference
+            {
+                TypeDefinition = typeParamerterDeclaration,
+                IsNullableAnnotated = typeParameterSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                TypeArgs = EquatableArray<EquatableArray<CsTypeReference>>.Empty,
+            };
+
+            return (typeParamerterDeclaration, referenceInfo);
+        }
+
         ITypeContainer? container;
 
         if (typeSymbol.ContainingType is null)
@@ -32,89 +46,168 @@ internal static partial class TypeSymbolExtensions
 
             container = new NameSpaceInfo(namespaceBuilder.ToString());
         }
-        else if (typeSymbol is ITypeParameterSymbol)
-        {
-            container = null;
-        }
         else
         {
             (container, var containerReference) = BuildTypeDefinitionInfo(typeSymbol.ContainingType);
         }
 
-        var typeCategory = typeSymbol.TypeKind switch
+        if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
-            TypeKind.Enum => TypeCategory.Enum,
-            TypeKind.Struct => TypeCategory.Struct,
-            _ => TypeCategory.Class,
-        };
+            var elementTypeDeclaration = arrayTypeSymbol.ElementType.BuildTypeDefinitionInfo().DefinitionInfo;
 
-        EquatableArray<GenericTypeParam> genericTypeParams;
+            var arrayDeclaration = new CsArrayDeclaration(container, typeSymbol.Name, elementTypeDeclaration, arrayTypeSymbol.Rank);
 
-        EquatableArray<EquatableArray<CsTypeReference>> typeArgs = default;
-
-        if (typeSymbol is INamedTypeSymbol namedTypeSymbol && !namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
-        {
-            var originalDefinitionTypeSymbol = namedTypeSymbol.OriginalDefinition;
-
-            var typeParamsBuilder = ImmutableArray.CreateBuilder<GenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
-
-            for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
+            var referenceInfo = new CsTypeReference
             {
-                var genericTypeParam = namedTypeSymbol.TypeParameters[i].BuildGenericTypeParam();
+                TypeDefinition = arrayDeclaration,
+                IsNullableAnnotated = arrayTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                TypeArgs = EquatableArray<EquatableArray<CsTypeReference>>.Empty,
+            };
 
-                typeParamsBuilder.Add(genericTypeParam);
+            return (arrayDeclaration, referenceInfo);
+        }
+
+        if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
+        {
+            var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Enum)
+            {
+                var underlyingType = namedTypeSymbol.EnumUnderlyingType switch
+                {
+                    { SpecialType: SpecialType.System_Byte } => EnumUnderlyingType.Byte,
+                    { SpecialType: SpecialType.System_Int16 } => EnumUnderlyingType.Int16,
+                    { SpecialType: SpecialType.System_Int32 } => EnumUnderlyingType.Int32,
+                    { SpecialType: SpecialType.System_Int64 } => EnumUnderlyingType.Int64,
+                    { SpecialType: SpecialType.System_SByte } => EnumUnderlyingType.SByte,
+                    { SpecialType: SpecialType.System_UInt16 } => EnumUnderlyingType.UInt16,
+                    { SpecialType: SpecialType.System_UInt32 } => EnumUnderlyingType.UInt32,
+                    { SpecialType: SpecialType.System_UInt64 } => EnumUnderlyingType.UInt64,
+                    _ => throw new NotSupportedException(),
+                };
+
+                var arrayDeclaration = new CsEnumDeclaration(container, namedTypeSymbol.Name, accessibility, underlyingType);
+
+                var referenceInfo = new CsTypeReference
+                {
+                    TypeDefinition = arrayDeclaration,
+                    IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                    TypeArgs = EquatableArray<EquatableArray<CsTypeReference>>.Empty,
+                };
+
+                return (arrayDeclaration, referenceInfo);
             }
 
-            genericTypeParams = typeParamsBuilder.MoveToImmutable();
+            EquatableArray<GenericTypeParam> genericTypeParams;
 
-            var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeReference>>(countTypeArgsLength(namedTypeSymbol));
-            fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
-            typeArgs = typeArgsBuilder.MoveToImmutable();
+            EquatableArray<EquatableArray<CsTypeReference>> typeArgs = default;
+
+            if (!namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
+            {
+                var originalDefinitionTypeSymbol = namedTypeSymbol.OriginalDefinition;
+
+                var typeParamsBuilder = ImmutableArray.CreateBuilder<GenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
+
+                for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
+                {
+                    var genericTypeParam = namedTypeSymbol.TypeParameters[i].BuildGenericTypeParam();
+
+                    typeParamsBuilder.Add(genericTypeParam);
+                }
+
+                genericTypeParams = typeParamsBuilder.MoveToImmutable();
+
+                var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeReference>>(countTypeArgsLength(namedTypeSymbol));
+                fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
+                typeArgs = typeArgsBuilder.MoveToImmutable();
+            }
+            else
+            {
+                genericTypeParams = EquatableArray<GenericTypeParam>.Empty;
+            }
+
+            var interfaces = namedTypeSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo).ToImmutableArray().ToEquatableArray();
+
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Class)
+            {
+                if (!(namedTypeSymbol is { BaseType: { SpecialType: not SpecialType.System_Object } baseTypeSymbol }))
+                    baseTypeSymbol = null;
+
+                var baseTypeDeclaration = baseTypeSymbol?.BuildTypeDefinitionInfo().ReferenceInfo;
+
+                var classModifier = namedTypeSymbol switch
+                {
+                    { IsVirtual: true } => ClassModifier.Abstract,
+                    { IsSealed: true } => ClassModifier.Sealed,
+                    { IsStatic: true } => ClassModifier.Static,
+                    _ => ClassModifier.Default,
+                };
+
+                var definitionInfo = new CsClassDeclaration(
+                    container,
+                    namedTypeSymbol.Name,
+                    genericTypeParams,
+                    baseTypeDeclaration,
+                    interfaces,
+                    accessibility,
+                    classModifier);
+
+                var referenceInfo = new CsTypeReference
+                {
+                    TypeDefinition = definitionInfo,
+                    IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                    TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<CsTypeReference>>.Empty : typeArgs,
+                };
+
+                return (definitionInfo, referenceInfo);
+            }
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Interface)
+            {
+                var definitionInfo = new CsInterfaceDeclaration(
+                    container,
+                    namedTypeSymbol.Name,
+                    genericTypeParams,
+                    interfaces,
+                    accessibility);
+
+                var referenceInfo = new CsTypeReference
+                {
+                    TypeDefinition = definitionInfo,
+                    IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                    TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<CsTypeReference>>.Empty : typeArgs,
+                };
+
+                return (definitionInfo, referenceInfo);
+            }
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Struct)
+            {
+                var definitionInfo = new CsStructDeclaration(
+                    container,
+                    namedTypeSymbol.Name,
+                    genericTypeParams,
+                    interfaces,
+                    accessibility,
+                    namedTypeSymbol.IsReadOnly,
+                    namedTypeSymbol.IsRefLikeType);
+
+                var referenceInfo = new CsTypeReference
+                {
+                    TypeDefinition = definitionInfo,
+                    IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                    TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<CsTypeReference>>.Empty : typeArgs,
+                };
+
+                return (definitionInfo, referenceInfo);
+            }
         }
-        else
-        {
-            genericTypeParams = EquatableArray<GenericTypeParam>.Empty;
-        }
 
-        var baseType = typeSymbol switch
-        {
-            { IsValueType: true } => null,
-            { BaseType: null or { SpecialType: SpecialType.System_Object } } => null,
-            _ => typeSymbol.BaseType.BuildTypeDefinitionInfo().ReferenceInfo,
-        };
+         
+        throw new NotSupportedException();
 
-        var interfaces = typeSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo).ToImmutableArray().ToEquatableArray();
 
-        var accessibility = typeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
-
-        var classModifier = typeSymbol switch
-        {
-            { IsReferenceType: true, IsVirtual: true } => ClassModifier.Abstract,
-            { IsReferenceType: true, IsSealed: true } => ClassModifier.Sealed,
-            _ => ClassModifier.Default,
-        };
-
-        var definitionInfo = new CsTypeDeclaration(
-            container,
-            typeSymbol.Name,
-            typeCategory,
-            genericTypeParams,
-            baseType,
-            interfaces,
-            accessibility,
-            typeSymbol.IsStatic,
-            typeSymbol.IsReadOnly,
-            typeSymbol.IsRefLikeType,
-            classModifier);
-
-        var referenceInfo = new CsTypeReference
-        {
-            TypeDefinition = definitionInfo,
-            IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
-            TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<CsTypeReference>>.Empty : typeArgs,
-        };
-
-        return (definitionInfo, referenceInfo);
 
         int countTypeArgsLength(INamedTypeSymbol namedTypeSymbol)
         {

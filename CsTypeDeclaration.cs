@@ -6,21 +6,16 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型定義
 /// </summary>
-record class CsTypeDeclaration(
+abstract record class CsTypeDeclaration(
     ITypeContainer? Container,
-    string Name,
-    TypeCategory TypeCategory,
-    EquatableArray<GenericTypeParam> GenericTypeParams = default,
-    CsTypeReference? BaseType = null,
-    EquatableArray<CsTypeReference> Interfaces = default,
-    CsAccessibility Accessibility = CsAccessibility.Default,
-    bool IsStatic = false,
-    bool IsReadOnly = false,
-    bool IsRef = false,
-    ClassModifier ClassModifier = ClassModifier.Default
+    string Name
     )
-    : ITypeContainer, IEquatable<CsTypeDeclaration>
+    : ITypeContainer
 {
+    private string? _nameWithGenericArgs;
+
+    private string? _fullName;
+
     public string NameWithGenericParams
     {
         get
@@ -28,13 +23,13 @@ record class CsTypeDeclaration(
             if (_nameWithGenericArgs is not null)
                 return _nameWithGenericArgs;
 
-            if (GenericTypeParams.IsDefaultOrEmpty)
+            if (this is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams })
             {
-                _nameWithGenericArgs = Name;
+                _nameWithGenericArgs = $"{Name}<{string.Join(",", genericTypeParams.Values.Select(v => v.Name))}>";
             }
             else
             {
-                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeParams.Values.Select(v => v.Name))}>";
+                _nameWithGenericArgs = Name;
             }
 
             return _nameWithGenericArgs;
@@ -57,9 +52,6 @@ record class CsTypeDeclaration(
         }
     }
 
-    public string? _nameWithGenericArgs;
-
-    public string? _fullName;
 
     public string MakeStandardHintName()
     {
@@ -79,9 +71,9 @@ record class CsTypeDeclaration(
 
                 builder.Append(typeDefinitionInfo.Name);
 
-                if (typeDefinitionInfo.GenericTypeParams.Length > 0)
+                if (typeDefinitionInfo is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams })
                 {
-                    foreach (var genericArgument in typeDefinitionInfo.GenericTypeParams.Values)
+                    foreach (var genericArgument in genericTypeParams.Values)
                     {
                         builder.Append('_');
                         builder.Append(genericArgument.Name);
@@ -97,50 +89,40 @@ record class CsTypeDeclaration(
         }
     }
 
+
+
     public virtual bool Equals(CsTypeDeclaration? other)
     {
         if (other is null)
             return false;
 
-        var equalsResult = true
-               && EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container)
-               && Name == other.Name
-               && TypeCategory == other.TypeCategory
-               && Accessibility == other.Accessibility
-               && IsStatic == other.IsStatic
-               && IsReadOnly == other.IsReadOnly
-               && IsRef == other.IsRef
-               && ClassModifier == other.ClassModifier
-               && BaseType == other.BaseType
-               && EqualityComparer<EquatableArray<GenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams)
-               && EqualityComparer<EquatableArray<CsTypeReference>>.Default.Equals(Interfaces, other.Interfaces);
+        if (ReferenceEquals(this, other))
+            return true;
 
-        if (equalsResult)
-        {
-            other._nameWithGenericArgs ??= _nameWithGenericArgs;
-            other._fullName ??= _fullName;
+        if (!base.Equals(other))
+            return false;
 
-            _nameWithGenericArgs ??= other._nameWithGenericArgs;
-            _fullName ??= other._fullName;
-        }
+        if (!EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container))
+            return false;
 
-        return equalsResult;
+        if (Name != other.Name)
+            return false;
+
+        other._nameWithGenericArgs ??= _nameWithGenericArgs;
+        other._fullName ??= _fullName;
+
+        _nameWithGenericArgs ??= other._nameWithGenericArgs;
+        _fullName ??= other._fullName;
+
+        return true;
     }
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
+        hash.Add(base.GetHashCode());
         hash.Add(Container);
         hash.Add(Name);
-        hash.Add(BaseType);
-        hash.Add(TypeCategory);
-        hash.Add(Accessibility);
-        hash.Add(IsStatic);
-        hash.Add(IsReadOnly);
-        hash.Add(IsRef);
-        hash.Add(ClassModifier);
-        hash.Add(GenericTypeParams);
-        hash.Add(Interfaces);
         return hash.ToHashCode();
     }
 }

@@ -166,25 +166,31 @@ internal class SourceBuilder : IDisposable
         InternalAppend("\r\n".AsSpan());
     }
 
-    public _BlockEndDisposable BeginTypeDefinitionBlock(CsTypeDeclaration typeDefinitionInfo, string? classDeclarationLineTail = null)
+    public _BlockEndDisposable BeginTypeDefinitionBlock(CsTypeDeclaration typeDeclaration, string? classDeclarationLineTail = null)
     {
-        return beginTypeBlock(this, typeDefinitionInfo, isDestinationType: true, classDeclarationLineTail);
+        if (typeDeclaration is not CsUserDefinableTypeDeclaration userDefinableTypeDeclaration)
+            throw new ArgumentException(null, nameof(typeDeclaration));
 
-        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, CsTypeDeclaration typeDefinitionInfo, bool isDestinationType, string? classDeclarationLineTail)
+        return beginTypeBlock(this, typeDeclaration, isDestinationType: true, classDeclarationLineTail);
+
+        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, CsTypeDeclaration typeDeclaration, bool isDestinationType, string? typeDeclarationLineTail)
         {
+            if (typeDeclaration is not CsUserDefinableTypeDeclaration userDefinableTypeDeclaration)
+                throw new NotSupportedException();
+
             _BlockEndDisposable outerBlockEnd = default;
 
-            if (typeDefinitionInfo.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
+            if (userDefinableTypeDeclaration.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
             {
                 outerBlockEnd = beginNameSpace(self, nameSpace);
             }
-            else if (typeDefinitionInfo.Container is CsTypeDeclaration typeInfo)
+            else if (userDefinableTypeDeclaration.Container is CsTypeDeclaration typeInfo)
             {
                 outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, null);
             }
 
             self.PutIndentSpace();
-            self.Append(typeDefinitionInfo.Accessibility switch
+            self.Append(userDefinableTypeDeclaration.Accessibility switch
             {
                 CsAccessibility.Public            => "public ",
                 CsAccessibility.Internal          => "internal ",
@@ -193,86 +199,126 @@ internal class SourceBuilder : IDisposable
                 CsAccessibility.Private           => "private ",
                 _ => "",
             });
-            if (typeDefinitionInfo.IsStatic)
-                self.Append("static ");
-            self.Append(typeDefinitionInfo.ClassModifier switch
-            {
-                ClassModifier.Sealed   => "sealed ",
-                ClassModifier.Abstract => "abstract ",
-                _ => "",
-            });
-            if (typeDefinitionInfo.IsReadOnly)
-                self.Append("readonly ");
-            if (typeDefinitionInfo.IsRef)
-                self.Append("ref ");
-            self.Append("partial ");
-            self.Append(typeDefinitionInfo.TypeCategory switch
-            {
-                TypeCategory.Enum   => "enum ",
-                TypeCategory.Struct => "struct ",
-                _ => "class ",
-            });
-            self.Append(typeDefinitionInfo.Name);
 
-            if (!typeDefinitionInfo.GenericTypeParams.IsDefaultOrEmpty)
+            if (userDefinableTypeDeclaration is CsClassDeclaration classDeclaration)
+            {
+                self.Append(classDeclaration.ClassModifier switch
+                {
+                    ClassModifier.Sealed => "sealed ",
+                    ClassModifier.Abstract => "abstract ",
+                    ClassModifier.Static => "static ",
+                    _ => "",
+                });
+
+                self.Append("partial ");
+                self.Append("class ");
+            }
+            else if (userDefinableTypeDeclaration is CsInterfaceDeclaration interfaceDeclaration)
+            {
+                self.Append("partial ");
+                self.Append("interface ");
+            }
+            else if (userDefinableTypeDeclaration is CsStructDeclaration structDeclaration)
+            {
+                if (structDeclaration.IsReadOnly)
+                    self.Append("readonly ");
+                if (structDeclaration.IsRef)
+                    self.Append("ref ");
+
+                self.Append("partial ");
+                self.Append("struct ");
+            }
+            else if (userDefinableTypeDeclaration is CsEnumDeclaration enumDeclaration)
+            {
+                self.Append("enum ");
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            self.Append(userDefinableTypeDeclaration.Name);
+
+
+            if (userDefinableTypeDeclaration is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams })
             {
                 self.Append("<");
 
-                for (int i = 0; i < typeDefinitionInfo.GenericTypeParams.Length; i++)
+                for (int i = 0; i < genericTypeParams.Length; i++)
                 {
-                    var genericTypeArg = typeDefinitionInfo.GenericTypeParams[i];
+                    var genericTypeArg = genericTypeParams[i];
 
                     self.Append(genericTypeArg.Name);
 
-                    if (i < typeDefinitionInfo.GenericTypeParams.Length - 1)
+                    if (i < genericTypeParams.Length - 1)
                     {
                         self.Append(", ");
                     }
                 }
 
                 self.Append(">");
-
-                var hintingTypeNameBuilder = new StringBuilder();
-
-                hintingTypeNameBuilder.Append(typeDefinitionInfo.Name);
-                hintingTypeNameBuilder.Append('{');
-                hintingTypeNameBuilder.Append(string.Join("_", typeDefinitionInfo.GenericTypeParams));
-                hintingTypeNameBuilder.Append('}');
             }
 
             if (isDestinationType)
             {
-                var inheritTypeCount = 0;
-                if (typeDefinitionInfo.BaseType is not null)
-                    inheritTypeCount += 1;
-
-                if (!typeDefinitionInfo.Interfaces.IsDefaultOrEmpty)
-                    inheritTypeCount += typeDefinitionInfo.Interfaces.Length;
-
-                if (inheritTypeCount > 0)
+                if (userDefinableTypeDeclaration is CsEnumDeclaration enumDeclaration2)
                 {
-                    self.Append(" : ");
-
-                    var inheritTypes = new List<CsTypeReference>(inheritTypeCount);
-
-                    if (typeDefinitionInfo.BaseType is not null)
-                        inheritTypes.Add(typeDefinitionInfo.BaseType);
-
-                    if (!typeDefinitionInfo.Interfaces.IsDefaultOrEmpty)
-                        inheritTypes.AddRange(typeDefinitionInfo.Interfaces.Values);
-
-                    for (int i = 0; i < inheritTypes.Count; i++)
+                    self.Append(enumDeclaration2.UnderlyingType switch
                     {
-                        self.Append(inheritTypes[i].ToString());
+                        EnumUnderlyingType.Byte => " : byte",
+                        EnumUnderlyingType.Int16 => " : short",
+                        EnumUnderlyingType.Int64 => " : long",
+                        EnumUnderlyingType.SByte => " : sbyte",
+                        EnumUnderlyingType.UInt16 => " : ushort",
+                        EnumUnderlyingType.UInt32 => " : uint",
+                        EnumUnderlyingType.UInt64 => " : ulong",
+                        _ => "",
+                    });
+                }
+                else
+                {
+                    var inheritTypeCount = 0;
 
-                        if (i != inheritTypes.Count - 1)
-                            self.Append(", ");
+                    if (userDefinableTypeDeclaration is CsClassDeclaration { BaseType: { } baseType })
+                        inheritTypeCount += 1;
+                    else
+                        baseType = null;
+
+                    if (userDefinableTypeDeclaration is CsClassDeclaration { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
+                        inheritTypeCount += classInheritInterfaces.Length;
+                    else
+                        classInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
+
+                    if (userDefinableTypeDeclaration is CsStructDeclaration { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
+                        inheritTypeCount += structInheritInterfaces.Length;
+                    else
+                        structInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
+
+                    if (inheritTypeCount > 0)
+                    {
+                        self.Append(" : ");
+
+                        var inheritTypes = new List<CsTypeReference>(inheritTypeCount);
+
+                        if (baseType is not null)
+                            inheritTypes.Add(baseType);
+
+                        inheritTypes.AddRange(classInheritInterfaces.Values);
+                        inheritTypes.AddRange(structInheritInterfaces.Values);
+
+                        for (int i = 0; i < inheritTypes.Count; i++)
+                        {
+                            self.Append(inheritTypes[i].ToString());
+
+                            if (i != inheritTypes.Count - 1)
+                                self.Append(", ");
+                        }
                     }
                 }
 
-                if (classDeclarationLineTail is not null)
+                if (typeDeclarationLineTail is not null)
                 {
-                    self.Append(classDeclarationLineTail);
+                    self.Append(typeDeclarationLineTail);
                 }
             }
 
