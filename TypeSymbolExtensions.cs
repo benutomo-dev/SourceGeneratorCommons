@@ -76,13 +76,36 @@ internal static partial class TypeSymbolExtensions
             genericTypeParams = EquatableArray<GenericTypeParam>.Empty;
         }
 
-        var baseType = typeSymbol.BaseType?.BuildTypeDefinitionInfo().ReferenceInfo;
+        var baseType = typeSymbol switch
+        {
+            { IsValueType: true } => null,
+            { BaseType: null or { SpecialType: SpecialType.System_Object } } => null,
+            _ => typeSymbol.BaseType.BuildTypeDefinitionInfo().ReferenceInfo,
+        };
 
         var interfaces = typeSymbol.Interfaces.Select(v => v.BuildTypeDefinitionInfo().ReferenceInfo).ToImmutableArray().ToEquatableArray();
 
         var accessibility = typeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
-        var definitionInfo = new TypeDefinitionInfo(container, typeSymbol.Name, typeCategory, genericTypeParams, baseType, interfaces, accessibility, typeSymbol.IsStatic, typeSymbol.IsReadOnly, typeSymbol.IsRefLikeType);
+        var classModifier = typeSymbol switch
+        {
+            { IsReferenceType: true, IsVirtual: true } => ClassModifier.Abstract,
+            { IsReferenceType: true, IsSealed: true } => ClassModifier.Sealed,
+            _ => ClassModifier.Default,
+        };
+
+        var definitionInfo = new TypeDefinitionInfo(
+            container,
+            typeSymbol.Name,
+            typeCategory,
+            genericTypeParams,
+            baseType,
+            interfaces,
+            accessibility,
+            typeSymbol.IsStatic,
+            typeSymbol.IsReadOnly,
+            typeSymbol.IsRefLikeType,
+            classModifier);
 
         var referenceInfo = new TypeReferenceInfo
         {

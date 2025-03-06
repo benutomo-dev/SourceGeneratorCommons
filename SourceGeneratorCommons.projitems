@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AccessibilityExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ClassModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodSymbolExtensions.cs" />

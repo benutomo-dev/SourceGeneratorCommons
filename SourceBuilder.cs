@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Data;
 using System.Diagnostics;
 using System.Text;
 
@@ -171,21 +170,21 @@ internal class SourceBuilder : IDisposable
     {
         return beginTypeBlock(this, typeDefinitionInfo, isDestinationType: true, classDeclarationLineTail);
 
-        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, TypeDefinitionInfo namedTypeSymbol, bool isDestinationType, string? classDeclarationLineTail)
+        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, TypeDefinitionInfo typeDefinitionInfo, bool isDestinationType, string? classDeclarationLineTail)
         {
             _BlockEndDisposable outerBlockEnd = default;
 
-            if (namedTypeSymbol.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
+            if (typeDefinitionInfo.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
             {
                 outerBlockEnd = beginNameSpace(self, nameSpace);
             }
-            else if (namedTypeSymbol.Container is TypeDefinitionInfo typeInfo)
+            else if (typeDefinitionInfo.Container is TypeDefinitionInfo typeInfo)
             {
                 outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, null);
             }
 
             self.PutIndentSpace();
-            self.Append(namedTypeSymbol.Accessibility switch
+            self.Append(typeDefinitionInfo.Accessibility switch
             {
                 CSharpAccessibility.Public            => "public ",
                 CSharpAccessibility.Internal          => "internal ",
@@ -194,32 +193,38 @@ internal class SourceBuilder : IDisposable
                 CSharpAccessibility.Private           => "private ",
                 _ => "",
             });
-            if (namedTypeSymbol.IsStatic)
+            if (typeDefinitionInfo.IsStatic)
                 self.Append("static ");
-            if (namedTypeSymbol.IsReadOnly)
+            self.Append(typeDefinitionInfo.ClassModifier switch
+            {
+                ClassModifier.Sealed   => "sealed ",
+                ClassModifier.Abstract => "abstract ",
+                _ => "",
+            });
+            if (typeDefinitionInfo.IsReadOnly)
                 self.Append("readonly ");
-            if (namedTypeSymbol.IsRef)
+            if (typeDefinitionInfo.IsRef)
                 self.Append("ref ");
             self.Append("partial ");
-            self.Append(namedTypeSymbol.TypeCategory switch
+            self.Append(typeDefinitionInfo.TypeCategory switch
             {
                 TypeCategory.Enum   => "enum ",
                 TypeCategory.Struct => "struct ",
                 _ => "class ",
             });
-            self.Append(namedTypeSymbol.Name);
+            self.Append(typeDefinitionInfo.Name);
 
-            if (!namedTypeSymbol.GenericTypeParams.IsDefaultOrEmpty)
+            if (!typeDefinitionInfo.GenericTypeParams.IsDefaultOrEmpty)
             {
                 self.Append("<");
 
-                for (int i = 0; i < namedTypeSymbol.GenericTypeParams.Length; i++)
+                for (int i = 0; i < typeDefinitionInfo.GenericTypeParams.Length; i++)
                 {
-                    var genericTypeArg = namedTypeSymbol.GenericTypeParams[i];
+                    var genericTypeArg = typeDefinitionInfo.GenericTypeParams[i];
 
                     self.Append(genericTypeArg.Name);
 
-                    if (i < namedTypeSymbol.GenericTypeParams.Length - 1)
+                    if (i < typeDefinitionInfo.GenericTypeParams.Length - 1)
                     {
                         self.Append(", ");
                     }
@@ -229,16 +234,48 @@ internal class SourceBuilder : IDisposable
 
                 var hintingTypeNameBuilder = new StringBuilder();
 
-                hintingTypeNameBuilder.Append(namedTypeSymbol.Name);
+                hintingTypeNameBuilder.Append(typeDefinitionInfo.Name);
                 hintingTypeNameBuilder.Append('{');
-                hintingTypeNameBuilder.Append(string.Join("_", namedTypeSymbol.GenericTypeParams));
+                hintingTypeNameBuilder.Append(string.Join("_", typeDefinitionInfo.GenericTypeParams));
                 hintingTypeNameBuilder.Append('}');
             }
 
-            if (isDestinationType && classDeclarationLineTail is not null)
+            if (isDestinationType)
             {
-                self.Append(classDeclarationLineTail);
+                var inheritTypeCount = 0;
+                if (typeDefinitionInfo.BaseType is not null)
+                    inheritTypeCount += 1;
+
+                if (!typeDefinitionInfo.Interfaces.IsDefaultOrEmpty)
+                    inheritTypeCount += typeDefinitionInfo.Interfaces.Length;
+
+                if (inheritTypeCount > 0)
+                {
+                    self.Append(" : ");
+
+                    var inheritTypes = new List<TypeReferenceInfo>(inheritTypeCount);
+
+                    if (typeDefinitionInfo.BaseType is not null)
+                        inheritTypes.Add(typeDefinitionInfo.BaseType);
+
+                    if (!typeDefinitionInfo.Interfaces.IsDefaultOrEmpty)
+                        inheritTypes.AddRange(typeDefinitionInfo.Interfaces.Values);
+
+                    for (int i = 0; i < inheritTypes.Count; i++)
+                    {
+                        self.Append(inheritTypes[i].ToString());
+
+                        if (i != inheritTypes.Count - 1)
+                            self.Append(", ");
+                    }
+                }
+
+                if (classDeclarationLineTail is not null)
+                {
+                    self.Append(classDeclarationLineTail);
+                }
             }
+
             self.AppendLine("");
 
             return self.BeginBlock().Combine(outerBlockEnd);

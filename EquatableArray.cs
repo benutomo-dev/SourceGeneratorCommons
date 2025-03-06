@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace SourceGeneratorCommons;
 
@@ -22,7 +21,9 @@ public static class EquatableArray
 
 public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<EquatableArray<T>>
 {
+#pragma warning disable CA1000
     public static EquatableArray<T> Empty { get; } = ImmutableArray<T>.Empty.ToEquatableArray();
+#pragma warning restore CA1000
 
     public ImmutableArray<T> Values { get; } = values;
 

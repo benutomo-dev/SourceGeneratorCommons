@@ -16,7 +16,8 @@ record class TypeDefinitionInfo(
     CSharpAccessibility Accessibility = CSharpAccessibility.Default,
     bool IsStatic = false,
     bool IsReadOnly = false,
-    bool IsRef = false
+    bool IsRef = false,
+    ClassModifier ClassModifier = ClassModifier.Default
     )
     : ITypeContainer, IEquatable<TypeDefinitionInfo>
 {
@@ -109,6 +110,7 @@ record class TypeDefinitionInfo(
                && IsStatic == other.IsStatic
                && IsReadOnly == other.IsReadOnly
                && IsRef == other.IsRef
+               && ClassModifier == other.ClassModifier
                && BaseType == other.BaseType
                && EqualityComparer<EquatableArray<GenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams)
                && EqualityComparer<EquatableArray<TypeReferenceInfo>>.Default.Equals(Interfaces, other.Interfaces);
@@ -136,6 +138,7 @@ record class TypeDefinitionInfo(
         hash.Add(IsStatic);
         hash.Add(IsReadOnly);
         hash.Add(IsRef);
+        hash.Add(ClassModifier);
         hash.Add(GenericTypeParams);
         hash.Add(Interfaces);
         return hash.ToHashCode();
