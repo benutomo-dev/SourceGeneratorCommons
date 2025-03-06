@@ -21,7 +21,7 @@ internal static partial class TypeSymbolExtensions
         };
     }
 
-    internal static (TypeDefinitionInfo DefinitionInfo, TypeReferenceInfo ReferenceInfo) BuildTypeDefinitionInfo(this ITypeSymbol typeSymbol)
+    internal static (CsTypeDeclaration DefinitionInfo, CsTypeReference ReferenceInfo) BuildTypeDefinitionInfo(this ITypeSymbol typeSymbol)
     {
         ITypeContainer? container;
 
@@ -50,7 +50,7 @@ internal static partial class TypeSymbolExtensions
 
         EquatableArray<GenericTypeParam> genericTypeParams;
 
-        EquatableArray<EquatableArray<TypeReferenceInfo>> typeArgs = default;
+        EquatableArray<EquatableArray<CsTypeReference>> typeArgs = default;
 
         if (typeSymbol is INamedTypeSymbol namedTypeSymbol && !namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
         {
@@ -67,7 +67,7 @@ internal static partial class TypeSymbolExtensions
 
             genericTypeParams = typeParamsBuilder.MoveToImmutable();
 
-            var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<TypeReferenceInfo>>(countTypeArgsLength(namedTypeSymbol));
+            var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeReference>>(countTypeArgsLength(namedTypeSymbol));
             fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
             typeArgs = typeArgsBuilder.MoveToImmutable();
         }
@@ -94,7 +94,7 @@ internal static partial class TypeSymbolExtensions
             _ => ClassModifier.Default,
         };
 
-        var definitionInfo = new TypeDefinitionInfo(
+        var definitionInfo = new CsTypeDeclaration(
             container,
             typeSymbol.Name,
             typeCategory,
@@ -107,11 +107,11 @@ internal static partial class TypeSymbolExtensions
             typeSymbol.IsRefLikeType,
             classModifier);
 
-        var referenceInfo = new TypeReferenceInfo
+        var referenceInfo = new CsTypeReference
         {
             TypeDefinition = definitionInfo,
             IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
-            TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<TypeReferenceInfo>>.Empty : typeArgs,
+            TypeArgs = typeArgs.IsDefaultOrEmpty ? EquatableArray<EquatableArray<CsTypeReference>>.Empty : typeArgs,
         };
 
         return (definitionInfo, referenceInfo);
@@ -124,7 +124,7 @@ internal static partial class TypeSymbolExtensions
                 return 1;
         }
 
-        void fillTypeArgs(ImmutableArray<EquatableArray<TypeReferenceInfo>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
+        void fillTypeArgs(ImmutableArray<EquatableArray<CsTypeReference>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
         {
             if (namedTypeSymbol.ContainingType is not null)
                 fillTypeArgs(typeArgsBuilder, namedTypeSymbol.ContainingType);

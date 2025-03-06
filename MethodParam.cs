@@ -1,7 +1,7 @@
 ﻿namespace SourceGeneratorCommons;
 
 record class MethodParam(
-    TypeReferenceInfo Type,
+    CsTypeReference Type,
     string Name,
     ParamModifier Modifier = ParamModifier.Default,
     bool IsScoped = false

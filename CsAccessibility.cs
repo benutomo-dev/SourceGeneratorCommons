@@ -1,6 +1,6 @@
 ﻿namespace SourceGeneratorCommons;
 
-internal enum CSharpAccessibility
+internal enum CsAccessibility
 {
     Default,
     Private,

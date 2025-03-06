@@ -7,7 +7,7 @@ namespace SourceGeneratorCommons;
 
 static class MethodSymbolExtensions
 {
-    internal static MethodDefinitionInfo BuildMethodDefinitionInfo(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    internal static CsMethodDeclaration BuildMethodDefinitionInfo(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
     {
         var returnType = methodSymbol.ReturnType.BuildTypeDefinitionInfo().ReferenceInfo;
 
@@ -32,7 +32,7 @@ static class MethodSymbolExtensions
         var genericTypeParams = methodSymbol.TypeParameters.Select(v => v.BuildGenericTypeParam()).ToImmutableArray();
 
         bool isReadOnly;
-        CSharpAccessibility accessibility;
+        CsAccessibility accessibility;
         if (methodSymbol.IsPartialDefinition && !methodSymbol.DeclaringSyntaxReferences.IsDefaultOrEmpty)
         {
             var methodDeclarationSyntax = (MethodDeclarationSyntax)methodSymbol.DeclaringSyntaxReferences[0].GetSyntax(cancellationToken);
@@ -44,10 +44,10 @@ static class MethodSymbolExtensions
             accessibility = methodSymbol.DeclaredAccessibility.ToCSharpAccessibility();
         }
 
-        return new MethodDefinitionInfo(methodSymbol.Name, returnType, returnModifier, methodSymbol.IsStatic, methodSymbol.IsAsync, isReadOnly, methodParams, genericTypeParams, accessibility, methodModifier);
+        return new CsMethodDeclaration(methodSymbol.Name, returnType, returnModifier, methodSymbol.IsStatic, methodSymbol.IsAsync, isReadOnly, methodParams, genericTypeParams, accessibility, methodModifier);
 
 
-        (bool isReadOnly, CSharpAccessibility accessibility) FromMethodDeclarationSyntax(MethodDeclarationSyntax methodDeclarationSyntax)
+        (bool isReadOnly, CsAccessibility accessibility) FromMethodDeclarationSyntax(MethodDeclarationSyntax methodDeclarationSyntax)
         {
             var haveReadOnly = false;
             var havePublic = false;
@@ -73,12 +73,12 @@ static class MethodSymbolExtensions
 
             accessibility = (havePublic, haveProtected, haveInternal, havePrivate) switch
             {
-                (true, false, false, false) => CSharpAccessibility.Public,
-                (false, true, true, false) => CSharpAccessibility.ProtectedInternal,
-                (false, false, true, false) => CSharpAccessibility.Internal,
-                (false, true, false, false) => CSharpAccessibility.Protected,
-                (false, false, false, true) => CSharpAccessibility.Private,
-                _ => CSharpAccessibility.Default,
+                (true, false, false, false) => CsAccessibility.Public,
+                (false, true, true, false) => CsAccessibility.ProtectedInternal,
+                (false, false, true, false) => CsAccessibility.Internal,
+                (false, true, false, false) => CsAccessibility.Protected,
+                (false, false, false, true) => CsAccessibility.Private,
+                _ => CsAccessibility.Default,
             };
 
             return (haveReadOnly, accessibility);

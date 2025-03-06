@@ -1,6 +1,6 @@
 ﻿namespace SourceGeneratorCommons;
 
-record class MethodDefinitionInfo(
+record class CsMethodDeclaration(
     string Name,
     CsTypeReference ReturnType,
     ReturnModifier ReturnModifier = ReturnModifier.Default,

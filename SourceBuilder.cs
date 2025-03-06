@@ -166,11 +166,11 @@ internal class SourceBuilder : IDisposable
         InternalAppend("\r\n".AsSpan());
     }
 
-    public _BlockEndDisposable BeginTypeDefinitionBlock(TypeDefinitionInfo typeDefinitionInfo, string? classDeclarationLineTail = null)
+    public _BlockEndDisposable BeginTypeDefinitionBlock(CsTypeDeclaration typeDefinitionInfo, string? classDeclarationLineTail = null)
     {
         return beginTypeBlock(this, typeDefinitionInfo, isDestinationType: true, classDeclarationLineTail);
 
-        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, TypeDefinitionInfo typeDefinitionInfo, bool isDestinationType, string? classDeclarationLineTail)
+        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, CsTypeDeclaration typeDefinitionInfo, bool isDestinationType, string? classDeclarationLineTail)
         {
             _BlockEndDisposable outerBlockEnd = default;
 
@@ -178,7 +178,7 @@ internal class SourceBuilder : IDisposable
             {
                 outerBlockEnd = beginNameSpace(self, nameSpace);
             }
-            else if (typeDefinitionInfo.Container is TypeDefinitionInfo typeInfo)
+            else if (typeDefinitionInfo.Container is CsTypeDeclaration typeInfo)
             {
                 outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, null);
             }
@@ -186,11 +186,11 @@ internal class SourceBuilder : IDisposable
             self.PutIndentSpace();
             self.Append(typeDefinitionInfo.Accessibility switch
             {
-                CSharpAccessibility.Public            => "public ",
-                CSharpAccessibility.Internal          => "internal ",
-                CSharpAccessibility.Protected         => "protected ",
-                CSharpAccessibility.ProtectedInternal => "protected internal ",
-                CSharpAccessibility.Private           => "private ",
+                CsAccessibility.Public            => "public ",
+                CsAccessibility.Internal          => "internal ",
+                CsAccessibility.Protected         => "protected ",
+                CsAccessibility.ProtectedInternal => "protected internal ",
+                CsAccessibility.Private           => "private ",
                 _ => "",
             });
             if (typeDefinitionInfo.IsStatic)
@@ -253,7 +253,7 @@ internal class SourceBuilder : IDisposable
                 {
                     self.Append(" : ");
 
-                    var inheritTypes = new List<TypeReferenceInfo>(inheritTypeCount);
+                    var inheritTypes = new List<CsTypeReference>(inheritTypeCount);
 
                     if (typeDefinitionInfo.BaseType is not null)
                         inheritTypes.Add(typeDefinitionInfo.BaseType);
@@ -292,16 +292,16 @@ internal class SourceBuilder : IDisposable
         }
     }
 
-    public _BlockEndDisposable BeginMethodDefinitionBlock(MethodDefinitionInfo methodDefinitionInfo, string? methodDeclarationLineTail = null)
+    public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethodDeclaration methodDefinitionInfo, string? methodDeclarationLineTail = null)
     {
         PutIndentSpace();
         Append(methodDefinitionInfo.Accessibility switch
         {
-            CSharpAccessibility.Public => "public ",
-            CSharpAccessibility.Internal => "internal ",
-            CSharpAccessibility.Protected => "protected ",
-            CSharpAccessibility.ProtectedInternal => "protected internal ",
-            CSharpAccessibility.Private => "private ",
+            CsAccessibility.Public => "public ",
+            CsAccessibility.Internal => "internal ",
+            CsAccessibility.Protected => "protected ",
+            CsAccessibility.ProtectedInternal => "protected internal ",
+            CsAccessibility.Private => "private ",
             _ => "",
         });
         if (methodDefinitionInfo.IsStatic)

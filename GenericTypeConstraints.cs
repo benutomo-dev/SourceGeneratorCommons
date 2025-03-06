@@ -5,9 +5,9 @@ internal record struct GenericTypeConstraints(
 
     bool HaveDefaultConstructor = false,
 
-    TypeReferenceInfo? BaseType = null,
+    CsTypeReference? BaseType = null,
 
-    EquatableArray<TypeReferenceInfo> Interfaces = default
+    EquatableArray<CsTypeReference> Interfaces = default
 
 #if CODE_ANALYSYS4_12_2_OR_GREATER
     , bool AllowRefStruct = false

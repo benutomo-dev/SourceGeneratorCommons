@@ -4,16 +4,16 @@ namespace SourceGeneratorCommons;
 
 static class AccessibilityExtensions
 {
-    public static CSharpAccessibility ToCSharpAccessibility(this Accessibility accessibility)
+    public static CsAccessibility ToCSharpAccessibility(this Accessibility accessibility)
     {
         var cSharpAccessibility = accessibility switch
         {
-            Accessibility.Public => CSharpAccessibility.Public,
-            Accessibility.Internal => CSharpAccessibility.Internal,
-            Accessibility.Protected => CSharpAccessibility.Protected,
-            Accessibility.ProtectedAndInternal => CSharpAccessibility.ProtectedInternal,
-            Accessibility.Private => CSharpAccessibility.Private,
-            _ => CSharpAccessibility.Default,
+            Accessibility.Public => CsAccessibility.Public,
+            Accessibility.Internal => CsAccessibility.Internal,
+            Accessibility.Protected => CsAccessibility.Protected,
+            Accessibility.ProtectedAndInternal => CsAccessibility.ProtectedInternal,
+            Accessibility.Private => CsAccessibility.Private,
+            _ => CsAccessibility.Default,
         };
         return cSharpAccessibility;
     }
