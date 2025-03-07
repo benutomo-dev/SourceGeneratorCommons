@@ -25,14 +25,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)MethodSymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ParamModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReturnModifier.cs" />
-    <Compile Include="..\SourceGeneratorCommons\CsAccessibility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CsDeclarationProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CsAccessibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EquatableArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericConstraintTypeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericTypeConstraints.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericTypeParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ITypeContainer.cs" />
-    <Compile Include="..\SourceGeneratorCommons\CsMethodDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CsMethodDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameSpaceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SemanticModelExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SourceBuilder.cs" />
@@ -41,9 +42,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.IsAssignableTo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeCategory.cs" />
-    <Compile Include="..\SourceGeneratorCommons\CsTypeReference.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CsTypeReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeSymbolExtensions.cs" />
-    <Compile Include="..\SourceGeneratorCommons\CsTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CsTypeDeclaration.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
