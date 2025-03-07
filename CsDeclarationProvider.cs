@@ -1,253 +1,137 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text;
 
 namespace SourceGeneratorCommons;
 
-internal class CsDeclarationProvider
+internal class CsDeclarationProvider : IDisposable
 {
-    private ConcurrentDictionary<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary = new ConcurrentDictionary<ITypeSymbol, CsTypeDeclaration>(SymbolEqualityComparer.Default);
-
-    private ConcurrentDictionary<ITypeSymbol, CsTypeReference> _typeReferenceDictionary = new ConcurrentDictionary<ITypeSymbol, CsTypeReference>(SymbolEqualityComparer.IncludeNullability);
-
-    internal (CsTypeDeclaration DefinitionInfo, CsTypeReference ReferenceInfo) BuildTypeDefinitionInfo(ITypeSymbol typeSymbol)
+    private enum LockState
     {
-        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
-            return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
+        None,
+        Read,
+        Write,
+    }
+
+    private ref struct ExitUpgradableReadLock : IDisposable
+    {
+        private ReaderWriterLockSlim? _readerWriterLock;
+
+        public ExitUpgradableReadLock(ReaderWriterLockSlim? readerWriterLock)
+        {
+            _readerWriterLock = readerWriterLock;
+        }
+
+        public void Dispose()
+        {
+            _readerWriterLock?.ExitUpgradeableReadLock();
+            _readerWriterLock = null;
+        }
+    }
+
+    private ref struct ExitWriteLock : IDisposable
+    {
+        private ReaderWriterLockSlim? _readerWriterLock;
+
+        public ExitWriteLock(ReaderWriterLockSlim? readerWriterLock)
+        {
+            _readerWriterLock = readerWriterLock;
+        }
+
+        public void Dispose()
+        {
+            _readerWriterLock?.ExitWriteLock();
+            _readerWriterLock = null;
+        }
+    }
+
+    private Dictionary<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary = new Dictionary<ITypeSymbol, CsTypeDeclaration>(SymbolEqualityComparer.Default);
+
+    private Dictionary<ITypeSymbol, CsTypeReference> _typeReferenceDictionary = new Dictionary<ITypeSymbol, CsTypeReference>(SymbolEqualityComparer.IncludeNullability);
+
+    private ReaderWriterLockSlim _readWriteLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+    public CsDeclarationProvider()
+    {
+    }
+
+    public void Dispose()
+    {
+        _readWriteLock.Dispose();
+    }
+
+    internal CsTypeDeclaration GetTypeDeclaration(ITypeSymbol typeSymbol)
+    {
+        AssertLockState(_readWriteLock, LockState.None);
+
+        return GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, LockState.None);
+    }
+
+    internal CsTypeReference GetTypeReference(ITypeSymbol typeSymbol)
+    {
+        AssertLockState(_readWriteLock, LockState.None);
+
+        return GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol, LockState.None);
+    }
+
+    internal CsMethodDeclaration GetMethodDeclaration(IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    {
+        AssertLockState(_readWriteLock, LockState.None);
+
+        return GetMethodDeclaration(methodSymbol, LockState.None, cancellationToken);
+    }
+
+    private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol, LockState lockState)
+    {
+        using var _ = EnterReadLockIfNecessary(lockState, out var currentLockState);
 
         if (_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
-        {
-            cachedTypeReferenceInfo = PerformCacheTypeReference(cachedTypeDeclaration, typeSymbol);
+            return cachedTypeDeclaration;
 
-            return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-        }
-
-        if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
-        {
-            var typeParameterDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                typeSymbol,
-                static typeSymbol => new CsTypeParameterDeclaration(typeSymbol.Name)
-                );
-
-            cachedTypeReferenceInfo = PerformCacheTypeReference(typeParameterDeclaration, typeSymbol);
-
-            return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-        }
-
-        ITypeContainer? container;
-
-        if (typeSymbol.ContainingType is null)
-        {
-            var namespaceBuilder = new StringBuilder();
-            SymbolExtensions.AppendFullNamespace(namespaceBuilder, typeSymbol.ContainingNamespace);
-
-            container = new NameSpaceInfo(namespaceBuilder.ToString());
-        }
-        else
-        {
-            (container, var containerReference) = BuildTypeDefinitionInfo(typeSymbol.ContainingType);
-        }
-
-        if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
-        {
-            var arrayDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                arrayTypeSymbol,
-                typeSymbol =>
-                {
-                    var arrayTypeSymbol = (IArrayTypeSymbol)typeSymbol;
-                    var elementTypeDeclaration = BuildTypeDefinitionInfo(arrayTypeSymbol.ElementType).DefinitionInfo;
-                    return new CsArrayDeclaration(container, typeSymbol.Name, elementTypeDeclaration, arrayTypeSymbol.Rank);
-                });
-
-            cachedTypeReferenceInfo = PerformCacheTypeReference(arrayDeclaration, typeSymbol);
-
-            return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-        }
-
-        if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
-        {
-            if (namedTypeSymbol.TypeKind == TypeKind.Enum)
-            {
-                var enumDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                    namedTypeSymbol,
-                    typeSymbol =>
-                    {
-                        var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-                        var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
-
-                        var underlyingType = namedTypeSymbol.EnumUnderlyingType switch
-                        {
-                            { SpecialType: SpecialType.System_Byte } => EnumUnderlyingType.Byte,
-                            { SpecialType: SpecialType.System_Int16 } => EnumUnderlyingType.Int16,
-                            { SpecialType: SpecialType.System_Int32 } => EnumUnderlyingType.Int32,
-                            { SpecialType: SpecialType.System_Int64 } => EnumUnderlyingType.Int64,
-                            { SpecialType: SpecialType.System_SByte } => EnumUnderlyingType.SByte,
-                            { SpecialType: SpecialType.System_UInt16 } => EnumUnderlyingType.UInt16,
-                            { SpecialType: SpecialType.System_UInt32 } => EnumUnderlyingType.UInt32,
-                            { SpecialType: SpecialType.System_UInt64 } => EnumUnderlyingType.UInt64,
-                            _ => throw new NotSupportedException(),
-                        };
-
-                        return new CsEnumDeclaration(container, namedTypeSymbol.Name, accessibility, underlyingType); ;
-                    }); 
-
-                cachedTypeReferenceInfo = PerformCacheTypeReference(enumDeclaration, typeSymbol);
-
-                return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-            }
-
-            if (namedTypeSymbol.TypeKind == TypeKind.Class)
-            {
-                var classDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                    namedTypeSymbol,
-                    typeSymbol =>
-                    {
-                        var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-                        var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
-
-                        var interfaces = BuildInterfaces(namedTypeSymbol);
-
-                        if (!(namedTypeSymbol is { BaseType: { SpecialType: not SpecialType.System_Object } baseTypeSymbol }))
-                            baseTypeSymbol = null;
-                        
-                        var baseTypeDeclaration = baseTypeSymbol is null ? null : BuildTypeDefinitionInfo(baseTypeSymbol).ReferenceInfo;
-
-                        var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
-
-                        var classModifier = namedTypeSymbol switch
-                        {
-                            { IsVirtual: true } => ClassModifier.Abstract,
-                            { IsSealed: true } => ClassModifier.Sealed,
-                            { IsStatic: true } => ClassModifier.Static,
-                            _ => ClassModifier.Default,
-                        };
-
-                        return new CsClassDeclaration(
-                            container,
-                            namedTypeSymbol.Name,
-                            genericTypeParams,
-                            baseTypeDeclaration,
-                            interfaces,
-                            accessibility,
-                            classModifier);
-                    }); 
-
-                cachedTypeReferenceInfo = PerformCacheTypeReference(classDeclaration, typeSymbol);
-
-                return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-            }
-
-            if (namedTypeSymbol.TypeKind == TypeKind.Interface)
-            {
-                var interfaceDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                    namedTypeSymbol,
-                    typeSymbol =>
-                    {
-                        var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-                        var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
-
-                        var interfaces = BuildInterfaces(namedTypeSymbol);
-
-                        var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
-
-                        return new CsInterfaceDeclaration(
-                            container,
-                            namedTypeSymbol.Name,
-                            genericTypeParams,
-                            interfaces,
-                            accessibility);
-                    });
-
-
-                cachedTypeReferenceInfo = PerformCacheTypeReference(interfaceDeclaration, typeSymbol);
-
-                return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-            }
-
-            if (namedTypeSymbol.TypeKind == TypeKind.Struct)
-            {
-                var structDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                    namedTypeSymbol,
-                    typeSymbol =>
-                    {
-                        var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-                        var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
-
-                        var interfaces = BuildInterfaces(namedTypeSymbol);
-
-                        var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
-
-                        return new CsStructDeclaration(
-                            container,
-                            namedTypeSymbol.Name,
-                            genericTypeParams,
-                            interfaces,
-                            accessibility,
-                            namedTypeSymbol.IsReadOnly,
-                            namedTypeSymbol.IsRefLikeType);
-                    });
-
-
-                cachedTypeReferenceInfo = PerformCacheTypeReference(structDeclaration, typeSymbol);
-
-                return (cachedTypeReferenceInfo.TypeDefinition, cachedTypeReferenceInfo);
-            }
-        }
-
-        throw new NotSupportedException();
+        return GetOrCreateTypeReferenceInWriteLock(typeSymbol, currentLockState).TypeDefinition;
     }
 
-    internal GenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol)
+    private CsTypeReference GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, LockState lockState)
     {
-        GenericConstraintTypeCategory genericConstraintTypeCategory;
-        if (typeParameterSymbol.HasReferenceTypeConstraint)
-        {
-            if (typeParameterSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
-                genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
-            else
-                genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
-        }
-        else if (typeParameterSymbol.HasValueTypeConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
-        else if (typeParameterSymbol.HasNotNullConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
-        else if (typeParameterSymbol.HasUnmanagedTypeConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
-        else
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
+        using var _ = EnterReadLockIfNecessary(lockState, out var currentLockState);
 
-        var baseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => !v.IsAbstract);
+        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
+            return cachedTypeReferenceInfo;
 
-        var constraints = new GenericTypeConstraints
-        {
-            TypeCategory = genericConstraintTypeCategory,
-            HaveDefaultConstructor = typeParameterSymbol.HasConstructorConstraint,
-#if CODE_ANALYSYS4_12_2_OR_GREATER
-            AllowRefStruct = typeParameterSymbol.AllowsRefLikeType,
-#endif
-            BaseType = baseType is null ? null : BuildTypeDefinitionInfo(baseType).ReferenceInfo,
-            Interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.IsAbstract).Select(v => BuildTypeDefinitionInfo(v).ReferenceInfo!).ToImmutableArray(),
-        };
-
-        var genericTypeParam = new GenericTypeParam
-        {
-            Name = typeParameterSymbol.Name,
-            Where = constraints,
-        };
-
-        return genericTypeParam;
+        return GetOrCreateTypeReferenceInWriteLock(typeSymbol, currentLockState);
     }
 
-    internal CsMethodDeclaration BuildMethodDefinitionInfo(IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    private CsTypeReference GetOrCreateTypeReferenceInWriteLock(ITypeSymbol typeSymbol, LockState lockState)
     {
-        var returnType = BuildTypeDefinitionInfo(methodSymbol.ReturnType).ReferenceInfo;
+        using var _ = EnterWriteLockIfNecessary(lockState, out var currentLockState);
+
+        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
+            return cachedTypeReferenceInfo;
+
+        if (!_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
+        {
+            cachedTypeDeclaration = CreateAndCacheTypeDeclaration(typeSymbol, currentLockState);
+        }
+
+        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out cachedTypeReferenceInfo))
+        {
+            Debug.Assert(ReferenceEquals(cachedTypeDeclaration, cachedTypeReferenceInfo.TypeDefinition));
+            return cachedTypeReferenceInfo;
+        }
+
+        cachedTypeReferenceInfo = CreateAndCacheTypeReference(cachedTypeDeclaration, typeSymbol, currentLockState);
+
+        return cachedTypeReferenceInfo;
+    }
+
+    private CsMethodDeclaration GetMethodDeclaration(IMethodSymbol methodSymbol, LockState lockState, CancellationToken cancellationToken)
+    {
+        using var _ = EnterReadLockIfNecessary(lockState, out var currentLockState);
+
+        var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType, currentLockState);
 
         var methodModifier = (methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual) switch
         {
@@ -265,9 +149,9 @@ internal class CsDeclarationProvider
             _ => ReturnModifier.Default,
         };
 
-        var methodParams = methodSymbol.Parameters.Select(buildMethodParam).ToImmutableArray();
+        var methodParams = methodSymbol.Parameters.Select(v => BuildMethodParam(v, currentLockState)).ToImmutableArray();
 
-        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v)).ToImmutableArray();
+        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v, currentLockState)).ToImmutableArray();
 
         bool isReadOnly;
         CsAccessibility accessibility;
@@ -321,33 +205,327 @@ internal class CsDeclarationProvider
 
             return (haveReadOnly, accessibility);
         }
+    }
 
+    private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol, LockState lockState)
+    {
+        Debug.Assert(lockState == LockState.Write);
+        AssertLockState(_readWriteLock, LockState.Write);
 
-        MethodParam buildMethodParam(IParameterSymbol parameterSymbol)
+        if (_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
         {
-            var paramType = BuildTypeDefinitionInfo(parameterSymbol.Type).ReferenceInfo;
+            Debug.Fail($"書き込みロックを取得した状態でキャッシュ済みの{nameof(CsTypeDeclaration)}がないときに呼び出されることがこのメソッドの実装の前提");
+            return cachedTypeDeclaration;
+        }
 
-            var paramModifier = parameterSymbol.RefKind switch
+        if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
+        {
+            var typeParameterDeclaration = new CsTypeParameterDeclaration(typeSymbol.Name);
+
+            _typeDeclarationDictionary.Add(typeSymbol, typeParameterDeclaration);
+
+            return typeParameterDeclaration;
+        }
+
+        if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
+        {
+            var arrayDeclaration = new CsArrayDeclaration(typeSymbol.Name, arrayTypeSymbol.Rank, out var completeArrayDeclaration);
+            _typeDeclarationDictionary.Add(arrayTypeSymbol, arrayDeclaration);
+
+            var container = BuildContainer(arrayTypeSymbol, lockState);
+
+            var elementTypeDeclaration = GetOrCreateTypeReferenceInWriteLock(arrayTypeSymbol.ElementType, lockState).TypeDefinition;
+
+            completeArrayDeclaration(container, elementTypeDeclaration);
+
+            return arrayDeclaration;
+        }
+
+        if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
+        {
+            if (namedTypeSymbol.TypeKind == TypeKind.Enum)
             {
-                RefKind.Ref => ParamModifier.Ref,
-                RefKind.In => ParamModifier.In,
-                RefKind.Out => ParamModifier.Out,
-#if CODE_ANALYSYS4_8_0_OR_GREATER
-                RefKind.RefReadOnlyParameter => ParamModifier.RefReadOnly,
-#endif
-                _ => ParamModifier.Default,
+                var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+                var underlyingType = namedTypeSymbol.EnumUnderlyingType switch
+                {
+                    { SpecialType: SpecialType.System_Byte } => EnumUnderlyingType.Byte,
+                    { SpecialType: SpecialType.System_Int16 } => EnumUnderlyingType.Int16,
+                    { SpecialType: SpecialType.System_Int32 } => EnumUnderlyingType.Int32,
+                    { SpecialType: SpecialType.System_Int64 } => EnumUnderlyingType.Int64,
+                    { SpecialType: SpecialType.System_SByte } => EnumUnderlyingType.SByte,
+                    { SpecialType: SpecialType.System_UInt16 } => EnumUnderlyingType.UInt16,
+                    { SpecialType: SpecialType.System_UInt32 } => EnumUnderlyingType.UInt32,
+                    { SpecialType: SpecialType.System_UInt64 } => EnumUnderlyingType.UInt64,
+                    _ => throw new NotSupportedException(),
+                };
+
+                // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
+                // 型情報の参照が必要なパラメータを除いた状態で作成。
+                var enumDeclaration = new CsEnumDeclaration(namedTypeSymbol.Name, accessibility, underlyingType, out var completeEnumDeclaration);
+
+                _typeDeclarationDictionary.Add(namedTypeSymbol, enumDeclaration);
+
+                var container = BuildContainer(namedTypeSymbol, lockState);
+
+                completeEnumDeclaration(container);
+
+                return enumDeclaration;
+            }
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Class)
+            {
+                var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+                var classModifier = namedTypeSymbol switch
+                {
+                    { IsVirtual: true } => ClassModifier.Abstract,
+                    { IsSealed: true } => ClassModifier.Sealed,
+                    { IsStatic: true } => ClassModifier.Static,
+                    _ => ClassModifier.Default,
+                };
+
+                // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
+                // 型情報の参照が必要なパラメータを除いた状態で作成。
+                var classDeclaration = new CsClassDeclaration(
+                            namedTypeSymbol.Name,
+                            accessibility,
+                            classModifier,
+                            out var completeClassDeclaration);
+
+                _typeDeclarationDictionary.Add(namedTypeSymbol, classDeclaration);
+
+                var container = BuildContainer(namedTypeSymbol, lockState);
+
+                var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, lockState);
+
+                var interfaces = BuildInterfaces(namedTypeSymbol, lockState);
+
+                if (!(namedTypeSymbol is { BaseType: { SpecialType: not SpecialType.System_Object } baseTypeSymbol }))
+                    baseTypeSymbol = null;
+
+                var baseTypeDeclaration = baseTypeSymbol is null ? null : GetOrCreateTypeReferenceInWriteLock(baseTypeSymbol, lockState);
+
+                completeClassDeclaration(container, genericTypeParams, baseTypeDeclaration, interfaces);
+
+                return classDeclaration;
+            }
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Interface)
+            {
+                var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+                // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
+                // 型情報の参照が必要なパラメータを除いた状態で作成。
+                var interfaceDeclaration = new CsInterfaceDeclaration(
+                    namedTypeSymbol.Name,
+                    accessibility,
+                    out var completeInterfaceDeclaration);
+
+                _typeDeclarationDictionary.Add(namedTypeSymbol, interfaceDeclaration);
+
+                var container = BuildContainer(namedTypeSymbol, lockState);
+
+                var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, lockState);
+
+                var interfaces = BuildInterfaces(namedTypeSymbol, lockState);
+
+                completeInterfaceDeclaration(container, genericTypeParams, interfaces);
+
+                return interfaceDeclaration;
+            }
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Struct)
+            {
+                var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+                // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
+                // 型情報の参照が必要なパラメータを除いた状態で作成。
+                var structDeclaration = new CsStructDeclaration(
+                    namedTypeSymbol.Name,
+                    accessibility,
+                    namedTypeSymbol.IsReadOnly,
+                    namedTypeSymbol.IsRefLikeType,
+                    out var completeStructDeclaration);
+
+                _typeDeclarationDictionary.Add(namedTypeSymbol, structDeclaration);
+
+                var container = BuildContainer(namedTypeSymbol, lockState);
+
+                var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, lockState);
+
+                var interfaces = BuildInterfaces(namedTypeSymbol, lockState);
+
+                completeStructDeclaration(container, genericTypeParams, interfaces);
+
+                return structDeclaration;
+            }
+        }
+
+        throw new NotSupportedException();
+    }
+
+    private CsTypeReference CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol, LockState lockState)
+    {
+        Debug.Assert(lockState == LockState.Write);
+        AssertLockState(_readWriteLock, LockState.Write);
+
+        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
+        {
+            Debug.Fail($"書き込みロックを取得した状態でキャッシュ済みの{nameof(CsTypeReference)}がないときに呼び出されることがこのメソッドの実装の前提");
+            return cachedTypeReferenceInfo;
+        }
+
+        CsTypeReference typeReference;
+        if (csTypeDeclaration is CsGenericDefinableTypeDeclaration && typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeArguments })
+        {
+            if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
+                throw new InvalidOperationException();
+
+            var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeReference>>(countTypeArgsLength(namedTypeSymbol));
+            fillTypeArgs(typeArgsBuilder, namedTypeSymbol, lockState);
+            var typeArgs = typeArgsBuilder.MoveToImmutable();
+
+            typeReference = new CsTypeReference
+            {
+                TypeDefinition = csTypeDeclaration,
+                IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                TypeArgs = typeArgs,
             };
+        }
+        else
+        {
+            typeReference = new CsTypeReference
+            {
+                TypeDefinition = csTypeDeclaration,
+                IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
+                TypeArgs = EquatableArray<EquatableArray<CsTypeReference>>.Empty,
+            };
+        }
 
-            bool isScoped = false;
-#if CODE_ANALYSYS4_4_0_OR_GREATER
-            isScoped = parameterSymbol.ScopedKind == ScopedKind.ScopedRef;
-#endif
+        _typeReferenceDictionary.Add(typeSymbol, typeReference);
 
-            return new MethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
+        return typeReference;
+
+        int countTypeArgsLength(INamedTypeSymbol namedTypeSymbol)
+        {
+            if (namedTypeSymbol.ContainingType is not null)
+                return countTypeArgsLength(namedTypeSymbol.ContainingType) + 1;
+            else
+                return 1;
+        }
+
+        void fillTypeArgs(ImmutableArray<EquatableArray<CsTypeReference>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol, LockState lockState)
+        {
+            if (namedTypeSymbol.ContainingType is not null)
+                fillTypeArgs(typeArgsBuilder, namedTypeSymbol.ContainingType, lockState);
+
+            typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, lockState)).ToImmutableArray());
         }
     }
 
-    private EquatableArray<GenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol)
+    private GenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, LockState lockState)
+    {
+        GenericConstraintTypeCategory genericConstraintTypeCategory;
+        if (typeParameterSymbol.HasReferenceTypeConstraint)
+        {
+            if (typeParameterSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
+                genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
+            else
+                genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
+        }
+        else if (typeParameterSymbol.HasValueTypeConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
+        else if (typeParameterSymbol.HasNotNullConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
+        else if (typeParameterSymbol.HasUnmanagedTypeConstraint)
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
+        else
+            genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
+
+        var constraints = new GenericTypeConstraints
+        {
+            TypeCategory = genericConstraintTypeCategory,
+            HaveDefaultConstructor = typeParameterSymbol.HasConstructorConstraint,
+#if CODE_ANALYSYS4_12_2_OR_GREATER
+            AllowRefStruct = typeParameterSymbol.AllowsRefLikeType,
+#endif
+
+            // 存在する場合は後で設定
+            BaseType = null,
+            Interfaces = EquatableArray<CsTypeReference>.Empty,
+        };
+
+        var baseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => !v.IsAbstract);
+        var interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.IsAbstract);
+
+        if (baseType is not null || interfaces.Any())
+        {
+            using (EnterReadLockIfNecessary(lockState, out var currentLockState))
+            {
+                constraints = constraints with
+                {
+                    BaseType = baseType is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseType, currentLockState),
+                    Interfaces = typeParameterSymbol.ConstraintTypes
+                        .Where(v => v.IsAbstract)
+                        .Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, currentLockState))
+                        .ToImmutableArray(),
+                };
+            }
+        }
+
+        var genericTypeParam = new GenericTypeParam
+        {
+            Name = typeParameterSymbol.Name,
+            Where = constraints,
+        };
+
+        return genericTypeParam;
+    }
+
+    private MethodParam BuildMethodParam(IParameterSymbol parameterSymbol, LockState lockState)
+    {
+        var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type, lockState);
+
+        var paramModifier = parameterSymbol.RefKind switch
+        {
+            RefKind.Ref => ParamModifier.Ref,
+            RefKind.In => ParamModifier.In,
+            RefKind.Out => ParamModifier.Out,
+#if CODE_ANALYSYS4_8_0_OR_GREATER
+            RefKind.RefReadOnlyParameter => ParamModifier.RefReadOnly,
+#endif
+            _ => ParamModifier.Default,
+        };
+
+        bool isScoped = false;
+#if CODE_ANALYSYS4_4_0_OR_GREATER
+        isScoped = parameterSymbol.ScopedKind == ScopedKind.ScopedRef;
+#endif
+
+        return new MethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
+    }
+
+    private ITypeContainer BuildContainer(ITypeSymbol typeSymbol, LockState lockState)
+    {
+        ITypeContainer? container;
+
+        if (typeSymbol.ContainingType is null)
+        {
+            var namespaceBuilder = new StringBuilder();
+            SymbolExtensions.AppendFullNamespace(namespaceBuilder, typeSymbol.ContainingNamespace);
+
+            container = new NameSpaceInfo(namespaceBuilder.ToString());
+        }
+        else
+        {
+            container = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, lockState);
+        }
+
+        return container;
+    }
+
+    private EquatableArray<GenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol, LockState lockState)
     {
         EquatableArray<GenericTypeParam> genericTypeParams;
 
@@ -359,7 +537,7 @@ internal class CsDeclarationProvider
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
-                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i]);
+                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i], lockState);
 
                 typeParamsBuilder.Add(genericTypeParam);
             }
@@ -374,69 +552,74 @@ internal class CsDeclarationProvider
         return genericTypeParams;
     }
 
-    private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol)
+    private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol, LockState lockState)
     {
-        var interfaces = namedTypeSymbol.Interfaces.Select(v => BuildTypeDefinitionInfo(v).ReferenceInfo).ToImmutableArray().ToEquatableArray();
-        return interfaces;
+        using (EnterReadLockIfNecessary(lockState, out var currentLockState))
+        {
+            var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, currentLockState)).ToImmutableArray().ToEquatableArray();
+            return interfaces;
+        }
     }
 
-    private CsTypeReference PerformCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol)
+
+    [Conditional("DEBUG")]
+    private static void AssertLockState(ReaderWriterLockSlim readerWriterLock, LockState expectedState)
     {
-        var cachedTypeReferenceInfo = _typeReferenceDictionary.GetOrAdd(typeSymbol, _ =>
+        switch (expectedState)
         {
-            var typeReference = buildTypeReference(csTypeDeclaration, typeSymbol);
-            return typeReference;
-        });
-
-        return cachedTypeReferenceInfo;
-
-        CsTypeReference buildTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol)
-        {
-            if (csTypeDeclaration is CsGenericDefinableTypeDeclaration && typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeArguments })
-            {
-                if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
-                    throw new InvalidOperationException();
-
-                var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeReference>>(countTypeArgsLength(namedTypeSymbol));
-                fillTypeArgs(typeArgsBuilder, namedTypeSymbol);
-                var typeArgs = typeArgsBuilder.MoveToImmutable();
-
-                var referenceInfo = new CsTypeReference
-                {
-                    TypeDefinition = csTypeDeclaration,
-                    IsNullableAnnotated = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
-                    TypeArgs = typeArgs,
-                };
-
-                return referenceInfo;
-            }
-            else
-            {
-                var referenceInfo = new CsTypeReference
-                {
-                    TypeDefinition = csTypeDeclaration,
-                    IsNullableAnnotated = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated,
-                    TypeArgs = EquatableArray<EquatableArray<CsTypeReference>>.Empty,
-                };
-
-                return referenceInfo;
-            }
+            case LockState.Write:
+                Debug.Assert(readerWriterLock.IsWriteLockHeld);
+                break;
+            case LockState.Read:
+                Debug.Assert(readerWriterLock.IsUpgradeableReadLockHeld);
+                break;
+            default:
+                Debug.Assert(readerWriterLock is { IsReadLockHeld: false, IsUpgradeableReadLockHeld: false, IsWriteLockHeld: false });
+                break;
         }
+    }
 
-        int countTypeArgsLength(INamedTypeSymbol namedTypeSymbol)
+    private ExitUpgradableReadLock EnterReadLockIfNecessary(LockState prevState, out LockState currentState)
+    {
+        return EnterReadLockIfNecessary(_readWriteLock, prevState, out currentState);
+    }
+
+    private ExitWriteLock EnterWriteLockIfNecessary(LockState prevState, out LockState currentState)
+    {
+        return EnterWriteLockIfNecessary(_readWriteLock, prevState, out currentState);
+    }
+
+    private static ExitUpgradableReadLock EnterReadLockIfNecessary(ReaderWriterLockSlim readerWriterLock, LockState prevState, out LockState currentState)
+    {
+        AssertLockState(readerWriterLock, prevState);
+
+        if (prevState == LockState.None)
         {
-            if (namedTypeSymbol.ContainingType is not null)
-                return countTypeArgsLength(namedTypeSymbol.ContainingType) + 1;
-            else
-                return 1;
+            readerWriterLock.EnterUpgradeableReadLock();
+            currentState = LockState.Read;
+            return new ExitUpgradableReadLock(readerWriterLock);
         }
-
-        void fillTypeArgs(ImmutableArray<EquatableArray<CsTypeReference>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
+        else
         {
-            if (namedTypeSymbol.ContainingType is not null)
-                fillTypeArgs(typeArgsBuilder, namedTypeSymbol.ContainingType);
+            currentState = prevState;
+            return new ExitUpgradableReadLock(null);
+        }
+    }
 
-            typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(v => BuildTypeDefinitionInfo(v).ReferenceInfo!).ToImmutableArray());
+    private static ExitWriteLock EnterWriteLockIfNecessary(ReaderWriterLockSlim readerWriterLock, LockState prevState, out LockState currentState)
+    {
+        AssertLockState(readerWriterLock, prevState);
+
+        if (prevState != LockState.Write)
+        {
+            readerWriterLock.EnterWriteLock();
+            currentState = LockState.Write;
+            return new ExitWriteLock(readerWriterLock);
+        }
+        else
+        {
+            currentState = prevState;
+            return new ExitWriteLock(null);
         }
     }
 }

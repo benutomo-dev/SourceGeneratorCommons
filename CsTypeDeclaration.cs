@@ -6,15 +6,12 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型定義
 /// </summary>
-abstract record class CsTypeDeclaration(
-    ITypeContainer? Container,
-    string Name
-    )
-    : ITypeContainer
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
+abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 {
-    private string? _nameWithGenericArgs;
+    public ITypeContainer? Container { get; private set; }
 
-    private string? _fullName;
+    public string Name { get; }
 
     public string NameWithGenericParams
     {
@@ -52,6 +49,32 @@ abstract record class CsTypeDeclaration(
         }
     }
 
+    protected bool IsConstructionCompleted { get; private set; }
+
+    private string? _nameWithGenericArgs;
+
+    private string? _fullName;
+
+    protected CsTypeDeclaration(ITypeContainer? container, string name)
+    {
+        Container = container;
+        Name = name;
+        IsConstructionCompleted = true;
+    }
+
+    protected CsTypeDeclaration(string name, out Action<ITypeContainer?> complete)
+    {
+        Name = name;
+
+        complete = container =>
+        {
+            if (IsConstructionCompleted)
+                throw new InvalidOperationException();
+
+            Container = container;
+            IsConstructionCompleted = true;
+        };
+    }
 
     public string MakeStandardHintName()
     {
@@ -89,7 +112,8 @@ abstract record class CsTypeDeclaration(
         }
     }
 
-
+    #region IEquatable
+    public override bool Equals(object? obj) => obj is CsTypeDeclaration other && Equals(other);
 
     public virtual bool Equals(CsTypeDeclaration? other)
     {
@@ -98,9 +122,6 @@ abstract record class CsTypeDeclaration(
 
         if (ReferenceEquals(this, other))
             return true;
-
-        if (!base.Equals(other))
-            return false;
 
         if (!EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container))
             return false;
@@ -124,5 +145,14 @@ abstract record class CsTypeDeclaration(
         hash.Add(Container);
         hash.Add(Name);
         return hash.ToHashCode();
+    }
+    #endregion
+
+    private string GetDebuggerDisplay()
+    {
+        if (IsConstructionCompleted)
+            return FullName;
+        else
+            return $"{Name} (Now constructing...)";
     }
 }
