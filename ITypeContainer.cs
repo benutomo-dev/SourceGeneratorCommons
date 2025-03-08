@@ -1,6 +1,6 @@
 ﻿namespace SourceGeneratorCommons;
 
-interface ITypeContainer
+interface ITypeContainer : ILazyConstructionRoot, IConstructionFullCompleteFactor
 {
     string Name { get; }
 

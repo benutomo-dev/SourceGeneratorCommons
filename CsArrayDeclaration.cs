@@ -19,12 +19,15 @@ sealed class CsArrayDeclaration : CsTypeDeclaration, IEquatable<CsArrayDeclarati
 
         complete = (typeContainer, elementType) =>
         {
-            if (IsConstructionCompleted)
+            if (SelfConstructionCompleted.IsCompleted)
                 throw new InvalidOperationException();
 
             ElementType = elementType;
 
-            baseComplete(typeContainer);
+            baseComplete(
+                typeContainer,
+                [elementType]
+                );
         };
     }
 

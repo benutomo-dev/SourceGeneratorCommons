@@ -14,18 +14,40 @@ abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaratio
         Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeReference>.Empty : interfaces;
     }
 
-    public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>> complete)
+    public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
         : base(name, accessibility, out var baseComplete)
     {
-        complete = (container, genericTypeParams, interfaces) =>
+        complete = (container, genericTypeParams, interfaces, constructionFullCompleteFactors) =>
         {
-            if (IsConstructionCompleted)
+            if (SelfConstructionCompleted.IsCompleted)
                 throw new InvalidOperationException();
 
-            GenericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<GenericTypeParam>.Empty : genericTypeParams;
-            Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeReference>.Empty : interfaces;
+            GenericTypeParams = genericTypeParams;
+            Interfaces = interfaces;
 
-            baseComplete(container);
+            foreach (var genericTypeParam in genericTypeParams.Values)
+            {
+                if (genericTypeParam.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor) is { } factors)
+                {
+                    if (constructionFullCompleteFactors is null)
+                        constructionFullCompleteFactors = factors;
+                    else
+                        constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(factors);
+                }
+            }
+
+            foreach (var interfaceItem in interfaces.Values)
+            {
+                if (interfaceItem.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor) is { } factors)
+                {
+                    if (constructionFullCompleteFactors is null)
+                        constructionFullCompleteFactors = factors;
+                    else
+                        constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(factors);
+                }
+            }
+
+            baseComplete(container, constructionFullCompleteFactors);
         };
     }
 

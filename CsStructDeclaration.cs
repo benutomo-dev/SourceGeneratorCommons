@@ -14,10 +14,18 @@ sealed class CsStructDeclaration : CsGenericDefinableTypeDeclaration, IEquatable
     }
 
     public CsStructDeclaration(string name, CsAccessibility accessibility, bool isReadOnly, bool isRef, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>> complete)
-        : base(name, accessibility, out complete)
+        : base(name, accessibility, out var baseComplete)
     {
         IsReadOnly = isReadOnly;
         IsRef = isRef;
+
+        complete = (container, genericTypeParams, interfaces) =>
+        {
+            if (SelfConstructionCompleted.IsCompleted)
+                throw new InvalidOperationException();
+
+            baseComplete(container, genericTypeParams, interfaces, null);
+        };
     }
 
     #region IEquatable

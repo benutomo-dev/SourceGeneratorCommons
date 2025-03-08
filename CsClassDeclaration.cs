@@ -20,12 +20,12 @@ sealed class CsClassDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<
 
         complete = (container, genericTypeParams, baseType, interfaces) =>
         {
-            if (IsConstructionCompleted)
+            if (SelfConstructionCompleted.IsCompleted)
                 throw new InvalidOperationException();
 
             BaseType = baseType;
 
-            baseComplete(container, genericTypeParams, interfaces);
+            baseComplete(container, genericTypeParams, interfaces, baseType?.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor));
         };
     }
 

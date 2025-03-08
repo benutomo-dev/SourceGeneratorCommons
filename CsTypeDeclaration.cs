@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SourceGeneratorCommons;
@@ -9,6 +11,15 @@ namespace SourceGeneratorCommons;
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 {
+    private class ReferenceEqualityComparer<T> : IEqualityComparer<T> where T : class
+    {
+        public static ReferenceEqualityComparer<T> Default { get; } = new ReferenceEqualityComparer<T>();
+
+        public bool Equals(T? x, T? y) => ReferenceEquals(x, y);
+
+        public int GetHashCode(T obj) => RuntimeHelpers.GetHashCode(obj);
+    }
+
     public ITypeContainer? Container { get; private set; }
 
     public string Name { get; }
@@ -17,6 +28,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
     {
         get
         {
+            ThrowIfInitializeNotFullCompleted();
+
             if (_nameWithGenericArgs is not null)
                 return _nameWithGenericArgs;
 
@@ -37,6 +50,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
     {
         get
         {
+            ThrowIfInitializeNotFullCompleted();
+
             if (_fullName is not null)
                 return _fullName;
 
@@ -49,35 +64,113 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         }
     }
 
-    protected bool IsConstructionCompleted { get; private set; }
-
     private string? _nameWithGenericArgs;
 
     private string? _fullName;
+
+    private Task ConstructionFullCompleted { get; }
+
+    Task ILazyConstructionRoot.ConstructionFullCompleted => ConstructionFullCompleted;
+
+
+    protected Task SelfConstructionCompleted => _selfConstructionCompletedSource?.Task ?? Task.CompletedTask;
+
+    Task IConstructionFullCompleteFactor.SelfConstructionCompleted => SelfConstructionCompleted;
+
+    private TaskCompletionSource? _selfConstructionCompletedSource;
+
+    protected static bool RejectAlreadyCompletedFactor { get; }
+
+#if DEBUG
+    public ImmutableArray<IConstructionFullCompleteFactor> ConstructionFullCompleteFactors { get; private set; }
+#endif
+
+    static CsTypeDeclaration()
+    {
+#if DEBUG
+        RejectAlreadyCompletedFactor = false;
+#else
+        RejectAlreadyCompletedFactor = true;
+#endif
+    }
 
     protected CsTypeDeclaration(ITypeContainer? container, string name)
     {
         Container = container;
         Name = name;
-        IsConstructionCompleted = true;
+
+        ConstructionFullCompleted = container?.ConstructionFullCompleted ?? Task.CompletedTask;
     }
 
-    protected CsTypeDeclaration(string name, out Action<ITypeContainer?> complete)
+    protected CsTypeDeclaration(string name, out Action<ITypeContainer?, IEnumerable<IConstructionFullCompleteFactor>?> complete)
     {
         Name = name;
 
-        complete = container =>
+        var constructionFullCompletedSource = new TaskCompletionSource();
+        ConstructionFullCompleted = constructionFullCompletedSource.Task;
+
+        _selfConstructionCompletedSource = new TaskCompletionSource();
+
+        complete = (container, constructionFullCompleteFactors) =>
         {
-            if (IsConstructionCompleted)
+            Debug.Assert(!_selfConstructionCompletedSource.Task.IsCompleted);
+
+            if (_selfConstructionCompletedSource.Task.IsCompleted)
                 throw new InvalidOperationException();
 
             Container = container;
-            IsConstructionCompleted = true;
+
+            _selfConstructionCompletedSource.SetResult();
+
+            if (container is not null && constructionFullCompleteFactors is not null)
+                constructionFullCompleteFactors = constructionFullCompleteFactors.Concat([container]);
+            else if (container is not null)
+                constructionFullCompleteFactors = [container];
+
+#if DEBUG
+            ConstructionFullCompleteFactors = constructionFullCompleteFactors?.Distinct(ReferenceEqualityComparer<IConstructionFullCompleteFactor>.Default).ToImmutableArray() ?? ImmutableArray<IConstructionFullCompleteFactor>.Empty;
+#endif
+
+            if (constructionFullCompleteFactors is null)
+            {
+                constructionFullCompletedSource.SetResult();
+            }
+            else
+            {
+                var waitTargets = constructionFullCompleteFactors
+                    .Where(v => !v.SelfConstructionCompleted.IsCompleted)
+                    .Select(v =>
+                    {
+                        // 自分自身は既に完了状態に移行しているはずなので、
+                        // 再帰的な参照があった場合でも既に除外されているはず
+                        Debug.Assert(!ReferenceEquals(this, v));
+                        return v;
+                    })
+                    .Distinct(ReferenceEqualityComparer<IConstructionFullCompleteFactor>.Default)
+                    .Select(v => v.SelfConstructionCompleted)
+                    .ToArray();
+
+                if (waitTargets.Length > 0)
+                    Task.WhenAll(waitTargets).ContinueWith(_ => constructionFullCompletedSource.SetResult());
+                else
+                    constructionFullCompletedSource.SetResult();
+            }
         };
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void ThrowIfInitializeNotFullCompleted()
+    {
+        if (!ConstructionFullCompleted.IsCompleted)
+            throwInvalidOperationException();
+
+        static void throwInvalidOperationException() => throw new InvalidOperationException();
     }
 
     public string MakeStandardHintName()
     {
+        ThrowIfInitializeNotFullCompleted();
+
         var builder = new StringBuilder(256);
         append(builder, this);
         return builder.ToString();
@@ -123,6 +216,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         if (ReferenceEquals(this, other))
             return true;
 
+        ThrowIfInitializeNotFullCompleted();
+
         if (!EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container))
             return false;
 
@@ -140,6 +235,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public override int GetHashCode()
     {
+        ThrowIfInitializeNotFullCompleted();
+
         var hash = new HashCode();
         hash.Add(base.GetHashCode());
         hash.Add(Container);
@@ -150,7 +247,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     private string GetDebuggerDisplay()
     {
-        if (IsConstructionCompleted)
+        if (ConstructionFullCompleted.IsCompleted)
             return FullName;
         else
             return $"{Name} (Now constructing...)";

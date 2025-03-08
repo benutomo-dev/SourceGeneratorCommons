@@ -10,7 +10,7 @@ abstract class CsUserDefinableTypeDeclaration : CsTypeDeclaration, IEquatable<Cs
         Accessibility = accessibility;
     }
 
-    public CsUserDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?> complete)
+    public CsUserDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, IEnumerable<IConstructionFullCompleteFactor>?> complete)
         : base(name, out complete)
     {
         Accessibility = accessibility;

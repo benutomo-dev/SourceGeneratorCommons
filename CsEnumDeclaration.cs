@@ -11,9 +11,14 @@ sealed class CsEnumDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsEn
     }
 
     public CsEnumDeclaration(string name, CsAccessibility accessibility, EnumUnderlyingType underlyingType, out Action<ITypeContainer?> complete)
-        : base(name, accessibility, out complete)
+        : base(name, accessibility, out var baseComplete)
     {
         UnderlyingType = underlyingType;
+
+        complete = typeContainer =>
+        {
+            baseComplete(typeContainer, null);
+        };
     }
 
     #region IEquatable

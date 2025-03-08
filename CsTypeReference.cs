@@ -5,15 +5,70 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型参照
 /// </summary>
-class CsTypeReference : IEquatable<CsTypeReference>
+class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot
 {
-    public required CsTypeDeclaration TypeDefinition { get; init; }
+    public CsTypeDeclaration TypeDefinition { get; }
 
-    public bool IsNullableAnnotated { get; init; }
+    public bool IsNullableAnnotated { get; }
 
-    public EquatableArray<EquatableArray<CsTypeReference>> TypeArgs { get; init; }
+    public EquatableArray<EquatableArray<CsTypeReference>> TypeArgs { get; }
+
+    private Task ConstructionFullCompleted { get; }
+
+    Task ILazyConstructionRoot.ConstructionFullCompleted => ConstructionFullCompleted;
 
     private string? _value;
+
+    public CsTypeReference(CsTypeDeclaration typeDefinition, bool isNullableAnnotated)
+        : this(typeDefinition, isNullableAnnotated, EquatableArray<EquatableArray<CsTypeReference>>.Empty)
+    {
+    }
+
+    public CsTypeReference(CsTypeDeclaration typeDefinition, bool isNullableAnnotated, EquatableArray<EquatableArray<CsTypeReference>> typeArgs)
+    {
+        TypeDefinition = typeDefinition ?? throw new ArgumentNullException(nameof(typeDefinition));
+        IsNullableAnnotated = isNullableAnnotated;
+        TypeArgs = typeArgs;
+
+        if (typeArgs.Values.IsDefault)
+            throw new ArgumentException(null, nameof(typeArgs));
+
+        foreach (var innerTypeArgs in typeArgs.Values)
+        {
+            if (innerTypeArgs.Values.IsDefault)
+                throw new ArgumentException(null, nameof(typeArgs));
+        }
+
+        if (GetConstructionFullCompleteFactors(true) is { } factors)
+            ConstructionFullCompleted = Task.WhenAll(factors.Select(v => v.SelfConstructionCompleted));
+        else
+            ConstructionFullCompleted = Task.CompletedTask;
+    }
+
+    public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
+    {
+        IEnumerable<IConstructionFullCompleteFactor>? factors = null;
+
+        if (!rejectAlreadyCompletedFactor || !((ILazyConstructionRoot)TypeDefinition).ConstructionFullCompleted.IsCompleted)
+            factors = [TypeDefinition];
+
+        if (!TypeArgs.Values.IsEmpty)
+        {
+            foreach (var innerTypeArg in TypeArgs.Values)
+            {
+                foreach (var typeArg in innerTypeArg.Values)
+                {
+                    if (typeArg.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor) is { } typeArgFactors)
+                    {
+                        factors ??= [];
+                        factors = factors.Concat(typeArgFactors);
+                    }
+                }
+            }
+        }
+
+        return factors;
+    }
 
     public override bool Equals(object? obj) => obj is CsTypeReference other && this.Equals(other);
 

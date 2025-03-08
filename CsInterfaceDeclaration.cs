@@ -10,8 +10,15 @@ sealed class CsInterfaceDeclaration : CsGenericDefinableTypeDeclaration, IEquata
 
 
     public CsInterfaceDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>> complete)
-        : base(name, accessibility, out complete)
+        : base(name, accessibility, out var baseComplete)
     {
+        complete = (container, genericTypeParams, interfaces) =>
+        {
+            if (SelfConstructionCompleted.IsCompleted)
+                throw new InvalidOperationException();
+
+            baseComplete(container, genericTypeParams, interfaces, null);
+        };
     }
 
     #region IEquatable

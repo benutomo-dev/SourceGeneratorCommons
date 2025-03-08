@@ -12,5 +12,31 @@ internal record struct GenericTypeConstraints(
 #if CODE_ANALYSYS4_12_2_OR_GREATER
     , bool AllowRefStruct = false
 #endif
-);
+)
+{
+
+    public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
+    {
+        IEnumerable<IConstructionFullCompleteFactor>? factors = null;
+
+        if (BaseType?.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor) is { } baseTypeFactors)
+        {
+            factors = baseTypeFactors;
+        }
+
+        if (!Interfaces.IsDefaultOrEmpty)
+        {
+            foreach (var interfaceItem in Interfaces.Values)
+            {
+                if (interfaceItem.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor) is { } interfaceFactors)
+                {
+                    factors ??= [];
+                    factors = factors.Concat(interfaceFactors);
+                }
+            }
+        }
+
+        return factors;
+    }
+}
 

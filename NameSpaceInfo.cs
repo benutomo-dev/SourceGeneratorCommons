@@ -11,6 +11,10 @@ class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
         Name = name ?? throw new ArgumentNullException(nameof(name));
     }
 
+    public Task ConstructionFullCompleted => Task.CompletedTask;
+
+    public Task SelfConstructionCompleted => Task.CompletedTask;
+
     public override bool Equals(object? obj)
     {
         return Equals(obj as NameSpaceInfo);

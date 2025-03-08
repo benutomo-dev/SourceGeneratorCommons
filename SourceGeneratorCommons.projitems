@@ -20,6 +20,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)CsTypeParameterDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsUserDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EnumUnderlyingType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IConstructionFullCompleteFactor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionRoot.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodSymbolExtensions.cs" />
