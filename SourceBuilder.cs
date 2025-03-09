@@ -3,7 +3,6 @@ using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text;
 
 namespace SourceGeneratorCommons;

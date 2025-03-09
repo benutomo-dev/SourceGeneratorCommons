@@ -1,4 +1,7 @@
-﻿namespace SourceGeneratorCommons.CSharp.Declarations.Internals;
+﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
+#pragma warning disable
+#endif
+namespace SourceGeneratorCommons.CSharp.Declarations.Internals;
 
 internal interface ILazyConstructionOwner
 {

@@ -1,4 +1,7 @@
-﻿using SourceGeneratorCommons.Collections.Generic;
+﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
+#pragma warning disable
+#endif
+using SourceGeneratorCommons.Collections.Generic;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
