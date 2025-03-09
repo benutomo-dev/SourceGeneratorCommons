@@ -5,6 +5,10 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 {
+    public sealed override bool IsValueType => false;
+
+    public sealed override bool IsGenericType => false;
+
     public CsTypeDeclaration ElementType { get; private set; }
 
     public int Rank { get; }

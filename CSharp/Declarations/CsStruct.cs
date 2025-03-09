@@ -7,6 +7,8 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsStruct : CsGenericDefinableTypeDeclaration, IEquatable<CsStruct>
 {
+    public sealed override bool IsValueType => true;
+
     public bool IsReadOnly { get; }
 
     public bool IsRef { get; }

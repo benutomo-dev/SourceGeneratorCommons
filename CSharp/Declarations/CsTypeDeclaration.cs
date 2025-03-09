@@ -26,6 +26,12 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public ITypeContainer? Container { get; private set; }
 
+    public abstract bool IsValueType { get; }
+
+    public virtual bool IsReferenceType => !IsValueType;
+
+    public abstract bool IsGenericType { get; }
+
     public string Name { get; }
 
     public string NameWithGenericParams

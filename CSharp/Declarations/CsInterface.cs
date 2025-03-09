@@ -7,6 +7,8 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsInterface : CsGenericDefinableTypeDeclaration, IEquatable<CsInterface>
 {
+    public sealed override bool IsValueType => false;
+
     public CsInterface(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {

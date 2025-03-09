@@ -5,6 +5,10 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
 {
+    public sealed override bool IsValueType => true;
+
+    public sealed override bool IsGenericType => false;
+
     public CsEnumUnderlyingType UnderlyingType { get; }
 
     public CsEnum(ITypeContainer? container, string name, CsAccessibility accessibility = CsAccessibility.Default, CsEnumUnderlyingType underlyingType = CsEnumUnderlyingType.Int32)

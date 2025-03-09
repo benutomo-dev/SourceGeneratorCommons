@@ -8,6 +8,8 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsGenericDefinableTypeDeclaration>
 {
+    public sealed override bool IsGenericType => !GenericTypeParams.IsDefaultOrEmpty;
+
     public EquatableArray<CsGenericTypeParam> GenericTypeParams { get; private set; }
 
     public EquatableArray<CsTypeReference> Interfaces { get; private set; }

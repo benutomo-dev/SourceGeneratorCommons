@@ -5,6 +5,12 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsTypeParameterDeclaration : CsTypeDeclaration, IEquatable<CsTypeParameterDeclaration>
 {
+    public sealed override bool IsValueType => false;
+
+    public sealed override bool IsReferenceType => false;
+
+    public sealed override bool IsGenericType => false;
+
     public CsTypeParameterDeclaration(string name) : base(container: null, name)
     {
     }

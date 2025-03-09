@@ -8,6 +8,8 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsClass : CsGenericDefinableTypeDeclaration, IEquatable<CsClass>
 {
+    public sealed override bool IsValueType => false;
+
     public CsTypeReference? BaseType { get; private set; }
 
     public CsClassModifier ClassModifier {get;}
