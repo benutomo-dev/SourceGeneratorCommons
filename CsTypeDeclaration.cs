@@ -175,14 +175,14 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         append(builder, this);
         return builder.ToString();
 
-        static void append(StringBuilder builder, ITypeContainer container)
+        static bool append(StringBuilder builder, ITypeContainer container)
         {
             if (container is CsTypeDeclaration typeDefinitionInfo)
             {
                 if (typeDefinitionInfo.Container is not null)
                 {
-                    append(builder, typeDefinitionInfo.Container);
-                    builder.Append('.');
+                    if (append(builder, typeDefinitionInfo.Container))
+                        builder.Append('.');
                 }
 
                 builder.Append(typeDefinitionInfo.Name);
@@ -195,12 +195,22 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
                         builder.Append(genericArgument.Name);
                     }
                 }
+
+                return true;
             }
             else
             {
                 DebugSGen.Assert(container is NameSpaceInfo);
 
-                builder.Append(container.Name);
+                if (!string.IsNullOrWhiteSpace(container.Name))
+                {
+                    builder.Append(container.Name);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
     }
