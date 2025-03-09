@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
-sealed class CsClass : CsGenericDefinableTypeDeclaration, IEquatable<CsClass>
+sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsClass>
 {
     public sealed override bool IsValueType => false;
 
@@ -43,7 +43,7 @@ sealed class CsClass : CsGenericDefinableTypeDeclaration, IEquatable<CsClass>
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsClass other && Equals(other);
 
-    public sealed override bool Equals(CsGenericDefinableTypeDeclaration? other) => Equals((object?)other);
+    public sealed override bool Equals(CsInterfaceInplementableTypeDeclaration? other) => Equals((object?)other);
 
 
     public bool Equals(CsClass? other)

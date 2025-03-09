@@ -240,10 +240,10 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
         ThrowIfInitializeNotFullCompleted();
 
-        if (!EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container))
+        if (Name != other.Name)
             return false;
 
-        if (Name != other.Name)
+        if (!EqualityComparer<ITypeContainer?>.Default.Equals(Container, other.Container))
             return false;
 
         other._nameWithGenericArgs ??= _nameWithGenericArgs;

@@ -9,17 +9,17 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 
     public sealed override bool IsGenericType => false;
 
-    public CsTypeDeclaration ElementType { get; private set; }
+    public CsTypeReference ElementType { get; private set; }
 
     public int Rank { get; }
 
-    public CsArray(ITypeContainer? typeContainer, string name, CsTypeDeclaration elementType, int rank = 1) : base(typeContainer, name)
+    public CsArray(ITypeContainer? typeContainer, string name, CsTypeReference elementType, int rank = 1) : base(typeContainer, name)
     {
         Rank = rank;
         ElementType = elementType;
     }
 
-    public CsArray(string name, int rank, out Action<ITypeContainer?, CsTypeDeclaration> complete) : base(name, out var baseComplete)
+    public CsArray(string name, int rank, out Action<ITypeContainer?, CsTypeReference> complete) : base(name, out var baseComplete)
     {
         Rank = rank;
         ElementType = default!;
@@ -33,7 +33,7 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 
             baseComplete(
                 typeContainer,
-                [elementType]
+                elementType.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor)
                 );
         };
     }
@@ -52,7 +52,7 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
         if (Rank != other.Rank)
             return false;
 
-        if (!EqualityComparer<CsTypeDeclaration>.Default.Equals(ElementType, other.ElementType))
+        if (!EqualityComparer<CsTypeReference>.Default.Equals(ElementType, other.ElementType))
             return false;
 
 

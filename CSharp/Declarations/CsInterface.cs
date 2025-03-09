@@ -5,7 +5,7 @@ using SourceGeneratorCommons.Collections.Generic;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
-sealed class CsInterface : CsGenericDefinableTypeDeclaration, IEquatable<CsInterface>
+sealed class CsInterface : CsInterfaceInplementableTypeDeclaration, IEquatable<CsInterface>
 {
     public sealed override bool IsValueType => false;
 
@@ -33,7 +33,7 @@ sealed class CsInterface : CsGenericDefinableTypeDeclaration, IEquatable<CsInter
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsInterface other && Equals(other);
 
-    public sealed override bool Equals(CsGenericDefinableTypeDeclaration? other) => Equals((object?)other);
+    public sealed override bool Equals(CsInterfaceInplementableTypeDeclaration? other) => Equals((object?)other);
 
     public bool Equals(CsInterface? other)
     {

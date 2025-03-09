@@ -16,6 +16,8 @@ internal class CsDeclarationProvider
 {
     public Compilation Compilation { get; }
 
+    private const int MaxNestCount = 30;
+
     private CancellationToken _rootCancellationToken;
 
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
@@ -39,7 +41,7 @@ internal class CsDeclarationProvider
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol);
+        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, nest: 0);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
         ((ILazyConstructionRoot)typeDeclaration).ConstructionFullCompleted.Wait(_rootCancellationToken);
@@ -51,7 +53,7 @@ internal class CsDeclarationProvider
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeReference = GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol);
+        var typeReference = GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol, nest: 0);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
         ((ILazyConstructionRoot)typeReference).ConstructionFullCompleted.Wait(_rootCancellationToken);
@@ -63,56 +65,50 @@ internal class CsDeclarationProvider
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        return GetMethodDeclarationInternal(methodSymbol);
+        return GetMethodDeclarationInternal(methodSymbol, nest: 0);
     }
 
-    private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol)
+    private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         if (_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
             return cachedTypeDeclaration;
 
-        return CreateAndCacheTypeDeclaration(typeSymbol);
+        return CreateAndCacheTypeDeclaration(typeSymbol, nest);
     }
 
-    private CsTypeReference GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol)
+    private CsTypeReference GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
             return cachedTypeReferenceInfo;
 
-        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol);
+        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, nest);
 
-        return CreateAndCacheTypeReference(typeDeclaration, typeSymbol);
+        return CreateAndCacheTypeReference(typeDeclaration, typeSymbol, nest);
     }
 
-    private CsMethod GetMethodDeclarationInternal(IMethodSymbol methodSymbol)
+    private CsMethod GetMethodDeclarationInternal(IMethodSymbol methodSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType);
+        var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType, nest);
 
-        var methodModifier = (methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual) switch
-        {
-            (_, _, _, true) => CsMethodModifier.Virtual,
-            (_, _, true, _) => CsMethodModifier.Abstract,
-            (true, true, _, _) => CsMethodModifier.SealedOverride,
-            (_, true, _, _) => CsMethodModifier.Override,
-            _ => CsMethodModifier.Default,
-        };
+        var methodModifier = methodSymbol.ToCsMethodModifier();
 
-        var returnModifier = (methodSymbol.ReturnsByRef, methodSymbol.ReturnsByRefReadonly) switch
-        {
-            (_, true) => CsReturnModifier.RefReadonly,
-            (true, _) => CsReturnModifier.Ref,
-            _ => CsReturnModifier.Default,
-        };
+        var returnModifier = methodSymbol.ToCsReturnModifier();
 
-        var methodParams = methodSymbol.Parameters.Select(v => BuildMethodParam(v)).ToImmutableArray();
+        var methodParams = methodSymbol.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
 
-        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v)).ToImmutableArray();
+        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v, nest)).ToImmutableArray();
 
         bool isReadOnly;
         CsAccessibility accessibility;
@@ -168,8 +164,10 @@ internal class CsDeclarationProvider
         }
     }
 
-    private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol)
+    private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         bool isAdded;
@@ -188,10 +186,10 @@ internal class CsDeclarationProvider
 
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
-            Action<ITypeContainer?, CsTypeDeclaration>? completeArrayDeclaration = null;
+            Action<ITypeContainer?, CsTypeReference>? completeArrayDeclaration = null;
 
             var arrayDeclaration = _typeDeclarationDictionary.GetOrAdd(arrayTypeSymbol, ref completeArrayDeclaration,
-                static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeDeclaration>? completeArrayDeclaration) =>
+                static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeReference>? completeArrayDeclaration) =>
                 {
                     return new CsArray(arrayTypeSymbol.Name, arrayTypeSymbol.Rank, out completeArrayDeclaration);
                 },
@@ -201,11 +199,11 @@ internal class CsDeclarationProvider
             {
                 DebugSGen.AssertIsNotNull(completeArrayDeclaration);
 
-                var container = BuildContainer(arrayTypeSymbol);
+                var container = BuildContainer(arrayTypeSymbol, nest);
 
-                var elementTypeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(arrayTypeSymbol.ElementType);
+                var elementTypeReference = GetTypeReferenceFromCachedTypeReferenceFirst(arrayTypeSymbol.ElementType, nest);
 
-                completeArrayDeclaration(container, elementTypeDeclaration);
+                completeArrayDeclaration(container, elementTypeReference);
             }
             
             return arrayDeclaration;
@@ -245,7 +243,7 @@ internal class CsDeclarationProvider
                 {
                     DebugSGen.AssertIsNotNull(completeEnumDeclaration);
 
-                    var container = BuildContainer(namedTypeSymbol);
+                    var container = BuildContainer(namedTypeSymbol, nest);
 
                     completeEnumDeclaration(container);
                 }
@@ -284,16 +282,16 @@ internal class CsDeclarationProvider
                 {
                     DebugSGen.AssertIsNotNull(completeClassDeclaration);
 
-                    var container = BuildContainer(namedTypeSymbol);
+                    var container = BuildContainer(namedTypeSymbol, nest);
 
-                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
+                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, nest);
 
-                    var interfaces = BuildInterfaces(namedTypeSymbol);
+                    var interfaces = BuildInterfaces(namedTypeSymbol, nest);
 
                     if (!(namedTypeSymbol is { BaseType: { SpecialType: not SpecialType.System_Object } baseTypeSymbol }))
                         baseTypeSymbol = null;
 
-                    var baseTypeReference = baseTypeSymbol is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseTypeSymbol);
+                    var baseTypeReference = baseTypeSymbol is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseTypeSymbol, nest);
 
                     completeClassDeclaration(container, genericTypeParams, baseTypeReference, interfaces);
                 }
@@ -323,11 +321,11 @@ internal class CsDeclarationProvider
                 {
                     DebugSGen.AssertIsNotNull(completeInterfaceDeclaration);
 
-                    var container = BuildContainer(namedTypeSymbol);
+                    var container = BuildContainer(namedTypeSymbol, nest);
 
-                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
+                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, nest);
 
-                    var interfaces = BuildInterfaces(namedTypeSymbol);
+                    var interfaces = BuildInterfaces(namedTypeSymbol, nest);
 
                     completeInterfaceDeclaration(container, genericTypeParams, interfaces);
                 }
@@ -359,24 +357,66 @@ internal class CsDeclarationProvider
                 {
                     DebugSGen.AssertIsNotNull(completeStructDeclaration);
 
-                    var container = BuildContainer(namedTypeSymbol);
+                    var container = BuildContainer(namedTypeSymbol, nest);
 
-                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol);
+                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, nest);
 
-                    var interfaces = BuildInterfaces(namedTypeSymbol);
+                    var interfaces = BuildInterfaces(namedTypeSymbol, nest);
 
                     completeStructDeclaration(container, genericTypeParams, interfaces);
                 }
 
                 return structDeclaration;
             }
+
+
+            if (namedTypeSymbol.TypeKind == TypeKind.Delegate)
+            {
+                Action<ITypeContainer?, CsTypeReference, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeDelegateDeclaration = null;
+
+                var delegateDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeDelegateDeclaration,
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, CsTypeReference, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeInterfaceDeclaration) =>
+                    {
+                        var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+                        var returnModifier = namedTypeSymbol.DelegateInvokeMethod.ToCsReturnModifier();
+
+                        // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
+                        // 型情報の参照が必要なパラメータを除いた状態で作成。
+                        return new CsDelegate(
+                            namedTypeSymbol.Name,
+                            accessibility,
+                            returnModifier,
+                            out completeInterfaceDeclaration);
+                    },
+                    out isAdded);
+
+                if (isAdded)
+                {
+                    DebugSGen.AssertIsNotNull(completeDelegateDeclaration);
+
+                    var container = BuildContainer(namedTypeSymbol, nest);
+
+                    var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.DelegateInvokeMethod.ReturnType, nest);
+
+                    var methodParams = namedTypeSymbol.DelegateInvokeMethod.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
+
+                    var genericTypeParams = namedTypeSymbol.DelegateInvokeMethod.TypeParameters.Select(v => BuildGenericTypeParam(v, nest)).ToImmutableArray();
+
+                    completeDelegateDeclaration(container, returnType, methodParams, genericTypeParams);
+                }
+
+                return delegateDeclaration;
+            }
         }
 
         throw new NotSupportedException();
     }
 
-    private CsTypeReference CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol)
+    private CsTypeReference CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         var typeReference = _typeReferenceDictionary.GetOrAdd(typeSymbol, (self: this, csTypeDeclaration, typeSymbol),
@@ -425,8 +465,10 @@ internal class CsDeclarationProvider
         }
     }
 
-    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol)
+    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         CsGenericConstraintTypeCategory genericConstraintTypeCategory;
@@ -457,10 +499,10 @@ internal class CsDeclarationProvider
             AllowRefStruct = typeParameterSymbol.AllowsRefLikeType,
 #endif
 
-            BaseType = baseType is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseType),
+            BaseType = baseType is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseType, nest),
             Interfaces = typeParameterSymbol.ConstraintTypes
                 .Where(v => v.IsAbstract)
-                .Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v))
+                .Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, nest))
                 .ToImmutableArray(),
         };
 
@@ -473,11 +515,13 @@ internal class CsDeclarationProvider
         return genericTypeParam;
     }
 
-    private CsMethodParam BuildMethodParam(IParameterSymbol parameterSymbol)
+    private CsMethodParam BuildMethodParam(IParameterSymbol parameterSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type);
+        var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type, nest);
 
         var paramModifier = parameterSymbol.RefKind switch
         {
@@ -498,8 +542,10 @@ internal class CsDeclarationProvider
         return new CsMethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
     }
 
-    private ITypeContainer BuildContainer(ITypeSymbol typeSymbol)
+    private ITypeContainer BuildContainer(ITypeSymbol typeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         ITypeContainer? container;
@@ -513,14 +559,16 @@ internal class CsDeclarationProvider
         }
         else
         {
-            container = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType);
+            container = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, nest);
         }
 
         return container;
     }
 
-    private EquatableArray<CsGenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol)
+    private EquatableArray<CsGenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         EquatableArray<CsGenericTypeParam> genericTypeParams;
@@ -533,7 +581,7 @@ internal class CsDeclarationProvider
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
-                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i]);
+                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i], nest);
 
                 typeParamsBuilder.Add(genericTypeParam);
             }
@@ -548,11 +596,13 @@ internal class CsDeclarationProvider
         return genericTypeParams;
     }
 
-    private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol)
+    private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol, int nest)
     {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var interfaces = namedTypeSymbol.Interfaces.Select(GetTypeReferenceFromCachedTypeReferenceFirst).ToImmutableArray().ToEquatableArray();
+        var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, nest)).ToImmutableArray().ToEquatableArray();
         return interfaces;
     }
 }

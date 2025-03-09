@@ -15,9 +15,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\HashTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsClass.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsDelegate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsInterfaceInplementableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsMethodModifierExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsReturnModifierExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsSpecialType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsStruct.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclarationExtensions.cs" />
