@@ -1,4 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
+#pragma warning disable
+#endif
+using System.Collections.Immutable;
 
 namespace SourceGeneratorCommons.Collections.Generic;
 

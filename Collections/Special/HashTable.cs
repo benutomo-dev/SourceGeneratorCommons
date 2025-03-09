@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
+#pragma warning disable
+#endif
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 

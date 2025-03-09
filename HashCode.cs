@@ -1,4 +1,7 @@
-﻿namespace System;
+﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
+#pragma warning disable
+#endif
+namespace System;
 
 #if !NETCOREAPP2_0_OR_GREATER
 internal class HashCode
