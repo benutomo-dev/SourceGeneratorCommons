@@ -178,14 +178,17 @@ internal class SourceBuilder : IDisposable
             if (typeDeclaration is not CsUserDefinableTypeDeclaration userDefinableTypeDeclaration)
                 throw new NotSupportedException();
 
+            bool hasOuterBlock = false;
             _BlockEndDisposable outerBlockEnd = default;
 
             if (userDefinableTypeDeclaration.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
             {
+                hasOuterBlock = true;
                 outerBlockEnd = beginNameSpace(self, nameSpace);
             }
             else if (userDefinableTypeDeclaration.Container is CsTypeDeclaration typeInfo)
             {
+                hasOuterBlock = true;
                 outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, null);
             }
 
@@ -324,7 +327,10 @@ internal class SourceBuilder : IDisposable
 
             self.AppendLine("");
 
-            return self.BeginBlock().Combine(outerBlockEnd);
+            if (hasOuterBlock)
+                return self.BeginBlock().Combine(outerBlockEnd);
+            else
+                return self.BeginBlock();
         }
 
         static _BlockEndDisposable beginNameSpace(SourceBuilder self, NameSpaceInfo namespaceSymbol)
