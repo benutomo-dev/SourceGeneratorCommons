@@ -1,4 +1,6 @@
-﻿namespace SourceGeneratorCommons;
+﻿using SourceGeneratorCommons.Collections.Generic;
+
+namespace SourceGeneratorCommons;
 
 internal record struct GenericTypeConstraints(
     GenericConstraintTypeCategory TypeCategory = GenericConstraintTypeCategory.Any,

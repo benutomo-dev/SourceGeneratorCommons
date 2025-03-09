@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using SourceGeneratorCommons.Collections.Generic;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;

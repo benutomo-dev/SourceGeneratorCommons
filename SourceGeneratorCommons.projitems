@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AccessibilityExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ClassModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\CreateAddValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\HashTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsArrayDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsClassDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsEnumDeclaration.cs" />
@@ -32,7 +34,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ReturnModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsDeclarationProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsAccessibility.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EquatableArray.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericConstraintTypeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericTypeConstraints.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GenericTypeParam.cs" />
@@ -53,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Collections\Generic\" />
   </ItemGroup>
   <Import Project="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
 </Project>

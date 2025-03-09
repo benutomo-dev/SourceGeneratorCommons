@@ -1,4 +1,6 @@
-﻿namespace SourceGeneratorCommons;
+﻿using SourceGeneratorCommons.Collections.Generic;
+
+namespace SourceGeneratorCommons;
 
 sealed class CsClassDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsClassDeclaration>
 {

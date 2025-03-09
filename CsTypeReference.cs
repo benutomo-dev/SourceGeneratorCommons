@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using SourceGeneratorCommons.Collections.Generic;
+using System.Text;
 
 namespace SourceGeneratorCommons;
 
