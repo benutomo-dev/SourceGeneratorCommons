@@ -11,15 +11,19 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 internal class CsDeclarationProvider
 {
+    public Compilation Compilation { get; }
+
     private CancellationToken _rootCancellationToken;
 
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
 
     private HashTable<ITypeSymbol, CsTypeReference> _typeReferenceDictionary;
 
-    public CsDeclarationProvider(CancellationToken rootCancellationToken)
+    public CsDeclarationProvider(Compilation compilation, CancellationToken rootCancellationToken)
     {
         var lockObj = new Lock();
+
+        Compilation = compilation;
 
         _rootCancellationToken = rootCancellationToken;
 

@@ -6,6 +6,11 @@
   <Target Name="PrepareCodeAnalysisVersionDefinitions" DependsOnTargets="ResolvePackageAssets">
     <PropertyGroup>
       <CodeAnalysisVersion>@(ResolvedCompileFileDefinitions->WithMetadataValue('NuGetPackageId', 'Microsoft.CodeAnalysis.CSharp')->Metadata('NuGetPackageVersion'))</CodeAnalysisVersion>
+
+      <!-- https://andrewlock.net/supporting-multiple-sdk-versions-in-analyzers-and-source-generators/ -->
+      <!-- https://learn.microsoft.com/en-us/dotnet/core/porting/versioning-sdk-msbuild-vs -->
+      <!-- https://learn.microsoft.com/en-us/visualstudio/extensibility/roslyn-version-support -->
+      
       <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.3.1'))">$(DefineConstants);CODE_ANALYSYS4_3_1_OR_GREATER</DefineConstants>
       <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.4.0'))">$(DefineConstants);CODE_ANALYSYS4_4_0_OR_GREATER</DefineConstants>
       <DefineConstants Condition="'$(CodeAnalysisVersion)' != '' AND $([MSBuild]::VersionGreaterThanOrEquals($(CodeAnalysisVersion), '4.5.0'))">$(DefineConstants);CODE_ANALYSYS4_5_0_OR_GREATER</DefineConstants>

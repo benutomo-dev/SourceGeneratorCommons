@@ -12,7 +12,7 @@ internal static class IncrementalGeneratorInitializationContextExtensions
 
         static CsDeclarationProvider selector(Compilation compilation, CancellationToken cancellationToken)
         {
-            return new CsDeclarationProvider(cancellationToken);
+            return new CsDeclarationProvider(compilation, cancellationToken);
         }
     }
 }
