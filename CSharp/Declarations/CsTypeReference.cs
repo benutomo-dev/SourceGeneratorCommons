@@ -75,6 +75,14 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         return factors;
     }
 
+    public CsTypeReference ToNullableIfReferenceType()
+    {
+        if (!TypeDefinition.IsReferenceType || IsNullableAnnotated)
+            return this;
+
+        return new CsTypeReference(TypeDefinition, isNullableAnnotated: true, TypeArgs);
+    }
+
     public override bool Equals(object? obj) => obj is CsTypeReference other && this.Equals(other);
 
     public bool Equals(CsTypeReference? other)
@@ -128,8 +136,17 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         }
         else
         {
-            if (getTypeKeyword(TypeDefinition) is { } typeKeyword)
-                return typeKeyword;
+            if (IsNullableAnnotated)
+            {
+                if (getNullableTypeKeyword(TypeDefinition) is { } typeKeyword)
+                    return typeKeyword;
+            }
+            else
+            {
+                if (getTypeKeyword(TypeDefinition) is { } typeKeyword)
+                    return typeKeyword;
+            }
+
 
             write(builder, TypeDefinition, TypeArgs.AsSpan());
 
