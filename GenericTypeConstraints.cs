@@ -12,9 +12,8 @@ internal record struct GenericTypeConstraints(
 #if CODE_ANALYSYS4_12_2_OR_GREATER
     , bool AllowRefStruct = false
 #endif
-)
+) : ILazyConstructionOwner
 {
-
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
     {
         IEnumerable<IConstructionFullCompleteFactor>? factors = null;

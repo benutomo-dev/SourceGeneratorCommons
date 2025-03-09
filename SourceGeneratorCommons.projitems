@@ -22,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EnumUnderlyingType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IConstructionFullCompleteFactor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionOwner.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionRoot.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MethodParam.cs" />

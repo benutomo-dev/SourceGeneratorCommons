@@ -5,7 +5,7 @@ namespace SourceGeneratorCommons;
 /// <summary>
 /// 型参照
 /// </summary>
-class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot
+class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILazyConstructionOwner
 {
     public CsTypeDeclaration TypeDefinition { get; }
 
