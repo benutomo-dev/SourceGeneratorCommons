@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
 sealed class CsTypeParameterDeclaration : CsTypeDeclaration, IEquatable<CsTypeParameterDeclaration>
 {

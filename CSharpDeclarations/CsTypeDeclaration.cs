@@ -1,9 +1,10 @@
-﻿using System.Collections.Immutable;
+﻿using SourceGeneratorCommons.CSharpDeclarations.Internals;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 /// <summary>
 /// 型定義

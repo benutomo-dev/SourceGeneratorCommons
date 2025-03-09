@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
 sealed class CsEnumDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsEnumDeclaration>
 {

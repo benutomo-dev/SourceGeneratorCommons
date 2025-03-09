@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 static class AccessibilityExtensions
 {

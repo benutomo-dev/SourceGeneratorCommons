@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
 record class MethodParam(
     CsTypeReference Type,

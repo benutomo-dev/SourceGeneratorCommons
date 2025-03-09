@@ -1,6 +1,6 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 record class CsMethodDeclaration(
     string Name,

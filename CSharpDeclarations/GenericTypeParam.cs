@@ -1,4 +1,6 @@
-﻿namespace SourceGeneratorCommons;
+﻿using SourceGeneratorCommons.CSharpDeclarations.Internals;
+
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 internal record struct GenericTypeParam(string Name, GenericTypeConstraints? Where = null) : ILazyConstructionOwner
 {

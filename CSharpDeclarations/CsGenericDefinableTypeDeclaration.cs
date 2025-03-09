@@ -1,6 +1,7 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
+using SourceGeneratorCommons.CSharpDeclarations.Internals;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsGenericDefinableTypeDeclaration>
 {

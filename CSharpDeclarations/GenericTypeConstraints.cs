@@ -1,6 +1,7 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
+using SourceGeneratorCommons.CSharpDeclarations.Internals;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 internal record struct GenericTypeConstraints(
     GenericConstraintTypeCategory TypeCategory = GenericConstraintTypeCategory.Any,

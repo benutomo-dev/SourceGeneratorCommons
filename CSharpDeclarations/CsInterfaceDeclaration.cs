@@ -1,6 +1,6 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 sealed class CsInterfaceDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsInterfaceDeclaration>
 {

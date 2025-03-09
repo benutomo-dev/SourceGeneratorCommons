@@ -1,7 +1,8 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
+using SourceGeneratorCommons.CSharpDeclarations.Internals;
 using System.Text;
 
-namespace SourceGeneratorCommons;
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 /// <summary>
 /// 型参照

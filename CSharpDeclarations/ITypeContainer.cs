@@ -1,4 +1,6 @@
-﻿namespace SourceGeneratorCommons;
+﻿using SourceGeneratorCommons.CSharpDeclarations.Internals;
+
+namespace SourceGeneratorCommons.CSharpDeclarations;
 
 interface ITypeContainer : ILazyConstructionRoot, IConstructionFullCompleteFactor
 {

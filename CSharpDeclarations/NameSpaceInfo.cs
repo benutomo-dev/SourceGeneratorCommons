@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
 class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
 {

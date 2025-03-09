@@ -9,55 +9,57 @@
     <Import_RootNamespace>SourceGeneratorCommons</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)AccessibilityExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ClassModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\AccessibilityExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\ClassModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\CreateAddValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\HashTable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsArrayDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsClassDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsEnumDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsGenericDefinableTypeDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsInterfaceDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsStructDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsTypeParameterDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsUserDefinableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsArrayDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsClassDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsEnumDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsGenericDefinableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsInterfaceDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsStructDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsTypeParameterDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsUserDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EnumUnderlyingType.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IConstructionFullCompleteFactor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionOwner.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionRoot.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IncrementalGeneratorInitializationContextExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MethodModifier.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MethodParam.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MethodSymbolExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ParamModifier.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ReturnModifier.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsDeclarationProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsAccessibility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\EnumUnderlyingType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\Internals\IConstructionFullCompleteFactor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\Internals\ILazyConstructionOwner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\Internals\ILazyConstructionRoot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\IncrementalGeneratorInitializationContextExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\MethodModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\MethodParam.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\MethodSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\ParamModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\ReturnModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsDeclarationProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsAccessibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableArray.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GenericConstraintTypeCategory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GenericTypeConstraints.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GenericTypeParam.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\GenericConstraintTypeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\GenericTypeConstraints.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\GenericTypeParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HashCode.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ITypeContainer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsMethodDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)NameSpaceInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SemanticModelExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\ITypeContainer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsMethodDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\NameSpaceInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SemanticModelExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SourceBuilder.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PropertySymbolExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.Appender.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SymbolExtensions.IsAssignableTo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)TypeCategory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsTypeReference.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)TypeSymbolExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CsTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\PropertySymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.Appender.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.IsAssignableTo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\TypeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsTypeReference.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\TypeSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpDeclarations\CsTypeDeclaration.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Collections\Generic\" />
+    <Folder Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\" />
+    <Folder Include="$(MSBuildThisFileDirectory)CSharpDeclarations\Internals\" />
   </ItemGroup>
   <Import Project="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
 </Project>
