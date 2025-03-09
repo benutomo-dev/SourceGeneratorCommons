@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsStruct.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclarationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeParameterDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsUserDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
@@ -58,8 +59,6 @@
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Collections\Generic\" />
     <Folder Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\" />
-    <Folder Include="$(MSBuildThisFileDirectory)CSharp\" />
-    <Folder Include="$(MSBuildThisFileDirectory)CSharp\Declarations\" />
   </ItemGroup>
   <Import Project="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
 </Project>

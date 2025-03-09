@@ -32,6 +32,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public abstract bool IsGenericType { get; }
 
+    public virtual bool IsSealed => false;
+
     public string Name { get; }
 
     public string NameWithGenericParams

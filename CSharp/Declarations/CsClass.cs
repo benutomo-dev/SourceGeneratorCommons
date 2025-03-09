@@ -10,6 +10,8 @@ sealed class CsClass : CsGenericDefinableTypeDeclaration, IEquatable<CsClass>
 {
     public sealed override bool IsValueType => false;
 
+    public sealed override bool IsSealed => ClassModifier is CsClassModifier.Sealed or CsClassModifier.Static;
+
     public CsTypeReference? BaseType { get; private set; }
 
     public CsClassModifier ClassModifier {get;}
