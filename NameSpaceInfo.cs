@@ -4,7 +4,7 @@ class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
 {
     public string Name { get; }
 
-    public string FullName => Name;
+    public string FullName => $"global::{Name}";
 
     public NameSpaceInfo(string name)
     {
