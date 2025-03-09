@@ -85,7 +85,7 @@ internal class SourceBuilder : IDisposable
 
         _cancellationToken.ThrowIfCancellationRequested();
 
-        Debug.Assert(_buffer.Length < _length + requiredSize);
+        DebugSGen.Assert(_buffer.Length < _length + requiredSize);
 
         var nextBuffer = ArrayPool<char>.Shared.Rent((_buffer.Length + requiredSize) * 2);
 

@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CsStructDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsTypeParameterDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CsUserDefinableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EnumUnderlyingType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IConstructionFullCompleteFactor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ILazyConstructionRoot.cs" />

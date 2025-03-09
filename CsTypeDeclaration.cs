@@ -113,7 +113,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
         complete = (container, constructionFullCompleteFactors) =>
         {
-            Debug.Assert(!_selfConstructionCompletedSource.Task.IsCompleted);
+            DebugSGen.Assert(!_selfConstructionCompletedSource.Task.IsCompleted);
 
             if (_selfConstructionCompletedSource.Task.IsCompleted)
                 throw new InvalidOperationException();
@@ -143,7 +143,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
                     {
                         // 自分自身は既に完了状態に移行しているはずなので、
                         // 再帰的な参照があった場合でも既に除外されているはず
-                        Debug.Assert(!ReferenceEquals(this, v));
+                        DebugSGen.Assert(!ReferenceEquals(this, v));
                         return v;
                     })
                     .Distinct(ReferenceEqualityComparer<IConstructionFullCompleteFactor>.Default)
@@ -198,7 +198,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             }
             else
             {
-                Debug.Assert(container is NameSpaceInfo);
+                DebugSGen.Assert(container is NameSpaceInfo);
 
                 builder.Append(container.Name);
             }

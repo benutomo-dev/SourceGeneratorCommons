@@ -23,8 +23,8 @@ internal static partial class TypeSymbolExtensions
 
     internal static bool IsXSymbolImpl(ITypeSymbol? typeSymbol, string ns1, string typeName)
     {
-        Debug.Assert(!ns1.Contains('.'));
-        Debug.Assert(!typeName.Contains('.'));
+        DebugSGen.Assert(!ns1.Contains('.'));
+        DebugSGen.Assert(!typeName.Contains('.'));
 
         if (typeSymbol is null) return false;
 

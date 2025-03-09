@@ -277,7 +277,7 @@ internal class CsDeclarationProvider
                 static typeSymbol => new CsTypeParameterDeclaration(typeSymbol.Name),
                 out isAdded);
 
-            Debug.Assert(((ILazyConstructionRoot)typeParameterDeclaration).ConstructionFullCompleted.IsCompleted);
+            DebugSGen.Assert(((ILazyConstructionRoot)typeParameterDeclaration).ConstructionFullCompleted.IsCompleted);
 
             return typeParameterDeclaration;
         }
@@ -295,7 +295,7 @@ internal class CsDeclarationProvider
 
             if (isAdded)
             {
-                AssertIsNotNull(completeArrayDeclaration);
+                DebugSGen.AssertIsNotNull(completeArrayDeclaration);
 
                 var container = BuildContainer(arrayTypeSymbol);
 
@@ -339,7 +339,7 @@ internal class CsDeclarationProvider
 
                 if (isAdded)
                 {
-                    AssertIsNotNull(completeEnumDeclaration);
+                    DebugSGen.AssertIsNotNull(completeEnumDeclaration);
 
                     var container = BuildContainer(namedTypeSymbol);
 
@@ -378,7 +378,7 @@ internal class CsDeclarationProvider
 
                 if (isAdded)
                 {
-                    AssertIsNotNull(completeClassDeclaration);
+                    DebugSGen.AssertIsNotNull(completeClassDeclaration);
 
                     var container = BuildContainer(namedTypeSymbol);
 
@@ -417,7 +417,7 @@ internal class CsDeclarationProvider
 
                 if (isAdded)
                 {
-                    AssertIsNotNull(completeInterfaceDeclaration);
+                    DebugSGen.AssertIsNotNull(completeInterfaceDeclaration);
 
                     var container = BuildContainer(namedTypeSymbol);
 
@@ -453,7 +453,7 @@ internal class CsDeclarationProvider
 
                 if (isAdded)
                 {
-                    AssertIsNotNull(completeStructDeclaration);
+                    DebugSGen.AssertIsNotNull(completeStructDeclaration);
 
                     var container = BuildContainer(namedTypeSymbol);
 
@@ -639,12 +639,4 @@ internal class CsDeclarationProvider
         var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v)).ToImmutableArray().ToEquatableArray();
         return interfaces;
     }
-
-#pragma warning disable CS8777
-    [Conditional("Debug")]
-    static void AssertIsNotNull<T>([NotNull] T? value) where T : class
-    {
-        Debug.Assert(value is not null);
-    }
-#pragma warning restore CS8777
 }

@@ -64,7 +64,7 @@ internal static partial class PropertySymbolExtensions
             }
             else
             {
-                Debug.Fail(null);
+                DebugSGen.Fail();
                 return false;
             }
         }

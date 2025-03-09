@@ -11,7 +11,7 @@ internal static partial class SymbolExtensions
     {
         if (symbol is null) return false;
 
-        Debug.Assert(attributeTypeSymbol?.BaseType?.Name == "Attribute");
+        DebugSGen.Assert(attributeTypeSymbol?.BaseType?.Name == "Attribute");
 
         foreach (var attributeData in symbol.GetAttributes())
         {

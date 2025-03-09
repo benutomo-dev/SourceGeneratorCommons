@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace SourceGeneratorCommons;
+﻿namespace SourceGeneratorCommons;
 
 internal record struct GenericTypeParam(string Name, GenericTypeConstraints? Where = null)
 {
