@@ -32,7 +32,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public abstract bool IsGenericType { get; }
 
-    public virtual bool IsSealed => false;
+    public virtual bool CanInherit => false;
 
     public string Name { get; }
 

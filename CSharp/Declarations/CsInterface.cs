@@ -9,6 +9,8 @@ sealed class CsInterface : CsGenericDefinableTypeDeclaration, IEquatable<CsInter
 {
     public sealed override bool IsValueType => false;
 
+    public sealed override bool CanInherit => true;
+
     public CsInterface(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
