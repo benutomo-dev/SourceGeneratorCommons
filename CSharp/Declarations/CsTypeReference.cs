@@ -12,17 +12,33 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 /// </summary>
 class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILazyConstructionOwner
 {
+    private enum TypeNameEmitMode
+    {
+        SimpleTypeName,
+        ReflectionFullTypeName,
+        SourceEmbeddingFullTypeName,
+        Cref,
+    }
+
     public CsTypeDeclaration TypeDefinition { get; }
 
     public bool IsNullableAnnotated { get; }
 
     public EquatableArray<EquatableArray<CsTypeReference>> TypeArgs { get; }
 
+    public string InternalReference => _internalReference ??= ToString(TypeNameEmitMode.SimpleTypeName);
+
+    public string GlobalReference => _globalReference ??= ToString(TypeNameEmitMode.SourceEmbeddingFullTypeName);
+
+    public string Cref => _cref ??= ToString(TypeNameEmitMode.Cref);
+
     private Task ConstructionFullCompleted { get; }
 
     Task ILazyConstructionRoot.ConstructionFullCompleted => ConstructionFullCompleted;
 
-    private string? _value;
+    private string? _cref;
+    private string? _globalReference;
+    private string? _internalReference;
 
     public CsTypeReference(CsTypeDeclaration typeDefinition, bool isNullableAnnotated)
         : this(typeDefinition, isNullableAnnotated, EquatableArray<EquatableArray<CsTypeReference>>.Empty)
@@ -90,18 +106,12 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         if (other is null)
             return false;
 
-        if (IsNullableAnnotated != other.IsNullableAnnotated)
+        // CsTypeReferenceは`class A : IEquatable<A>`のような自己参照的な関係にも関わるので
+        // 普通にメンバオブジェクトのEqualsを呼び出すと上記のような関係性に含まれる
+        // 循環参照でスタックオーバーフローが発生する。
+        // 完全な正確性は無いが安全な手法として一番詳細な文字列化結果で同一性を判定する。
+        if (GlobalReference != other.GlobalReference)
             return false;
-
-        if (!EqualityComparer<CsTypeDeclaration>.Default.Equals(TypeDefinition, other.TypeDefinition))
-            return false;
-
-        if (!EqualityComparer<EquatableArray<EquatableArray<CsTypeReference>>>.Default.Equals(TypeArgs, other.TypeArgs))
-            return false;
-
-        _value ??= other._value;
-
-        other._value ??= _value;
 
         return true;
     }
@@ -110,28 +120,29 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
     {
         var hashCode = new HashCode();
 
-        hashCode.Add(TypeDefinition);
-        hashCode.Add(IsNullableAnnotated);
-        hashCode.Add(TypeArgs);
-
+        // CsTypeReferenceは`class A : IEquatable<A>`のような自己参照的な関係にも関わるので
+        // 普通にメンバオブジェクトのGetHashCodeを呼び出すと上記のような関係性に含まれる
+        // 循環参照でスタックオーバーフローが発生する。
+        // 完全な正確性は無いが安全な手法として一番詳細な文字列化結果で同一性を判定する。
+        hashCode.Add(GlobalReference);
+ 
         return hashCode.ToHashCode();
     }
 
-    public override string ToString()
-    {
-        if (_value is not null)
-            return _value;
+    public override string ToString() => InternalReference;
 
+    private string ToString(TypeNameEmitMode mode)
+    {
         var builder = new StringBuilder();
 
-        if (TypeDefinition is { Name: "Nullable", Container: CsNameSpace { Name: "System" } } && !TypeArgs.IsDefaultOrEmpty && TypeArgs.Length == 1 && TypeArgs[0].Length == 1)
+        if (TypeDefinition is { Name: "Nullable", Container: CsNameSpace { IsSystem: true } } && !TypeArgs.IsDefaultOrEmpty && TypeArgs.Length == 1 && TypeArgs[0].Length == 1)
         {
             var structTypeReference = TypeArgs[^1][0];
 
             if (getNullableTypeKeyword(structTypeReference.TypeDefinition) is { } typeKeyword)
                 return typeKeyword;
 
-            write(builder, structTypeReference.TypeDefinition, structTypeReference.TypeArgs.AsSpan());
+            append(builder, structTypeReference.TypeDefinition, structTypeReference.TypeArgs.AsSpan(), mode);
             builder.Append('?');
         }
         else
@@ -147,41 +158,60 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
                     return typeKeyword;
             }
 
-
-            write(builder, TypeDefinition, TypeArgs.AsSpan());
+            append(builder, TypeDefinition, TypeArgs.AsSpan(), mode);
 
             if (IsNullableAnnotated)
                 builder.Append('?');
         }
 
-        _value = builder.ToString();
-        
+        var value = builder.ToString();
 
-        return _value;
+        return value;
 
 
-        void write(StringBuilder builder, CsTypeDeclaration typeDefinition, ReadOnlySpan<EquatableArray<CsTypeReference>> typeArgs)
+        void append(StringBuilder builder, CsTypeDeclaration typeDefinition, ReadOnlySpan<EquatableArray<CsTypeReference>> typeArgs, TypeNameEmitMode mode)
         {
-            if (typeDefinition.Container is CsTypeDeclaration containerType)
+            if (typeDefinition is CsArray csArray)
             {
-                write(builder, containerType, typeArgs.Slice(0, Math.Max(0, typeArgs.Length - 1)));
-                builder.Append('.');
+                append(builder, csArray.ElementType.TypeDefinition, csArray.ElementType.TypeArgs.AsSpan(), mode);
+                builder.Append('[');
+                for (int i = 0; i < csArray.Rank - 1; i++)
+                    builder.Append(',');
+                builder.Append(']');
             }
-            else if (typeDefinition.Container is not null)
+            else
             {
-                builder.Append(typeDefinition.Container.FullName);
+                if (mode != TypeNameEmitMode.SimpleTypeName)
+                {
+                    if (typeDefinition.Container is CsTypeDeclaration containerType)
+                    {
+                        append(builder, containerType, typeArgs.Slice(0, Math.Max(0, typeArgs.Length - 1)), mode);
+                        builder.Append('.');
+                    }
+                    else if (typeDefinition.Container is not null)
+                    {
+                        var containerValue = (mode, typeDefinition.Container) switch
+                        {
+                            // 名前空間はSourceEmbeddingFullTypeNameの時だけ"global::"付きで出力する
+                            (not TypeNameEmitMode.SourceEmbeddingFullTypeName, CsNameSpace csNameSpace) => csNameSpace.Name,
+                            _ => typeDefinition.Container.FullName,
+                        };
+                        
+                        builder.Append(containerValue);
 
-                if (!string.IsNullOrWhiteSpace(typeDefinition.Container.Name))
-                    builder.Append('.');
+                        if (!string.IsNullOrWhiteSpace(containerValue))
+                            builder.Append('.');
+                    }
+                }
+
+                builder.Append(typeDefinition.Name);
             }
-
-            builder.Append(typeDefinition.Name);
 
             var currentTypeArgs = typeArgs.Length > 0 ? typeArgs[^1] : EquatableArray<CsTypeReference>.Empty;
 
             if (currentTypeArgs.Length > 0)
             {
-                builder.Append('<');
+                builder.Append(mode == TypeNameEmitMode.Cref ? '{' : '<');
                 for (int i = 0; i < currentTypeArgs.Length; i++)
                 {
                     builder.Append(currentTypeArgs[i]);
@@ -189,7 +219,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
                     if (i != currentTypeArgs.Length - 1)
                         builder.Append(',');
                 }
-                builder.Append('>');
+                builder.Append(mode == TypeNameEmitMode.Cref ? '}' : '>');
             }
         }
 
@@ -199,19 +229,19 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
             {
                 switch (typeDefinition.Name)
                 {
-                    case "SByte":   return "sbyte?";
-                    case "Int16":   return "short?";
-                    case "Int32":   return "int?";
-                    case "Int64":   return "long?";
-                    case "Byte":    return "byte?";
-                    case "UInt16":  return "ushort?";
-                    case "UInt32":  return "uint?";
-                    case "UInt64":  return "ulong?";
-                    case "Single":  return "float?";
-                    case "Double":  return "double?";
+                    case "SByte": return "sbyte?";
+                    case "Int16": return "short?";
+                    case "Int32": return "int?";
+                    case "Int64": return "long?";
+                    case "Byte": return "byte?";
+                    case "UInt16": return "ushort?";
+                    case "UInt32": return "uint?";
+                    case "UInt64": return "ulong?";
+                    case "Single": return "float?";
+                    case "Double": return "double?";
                     case "Decimal": return "decimal?";
-                    case "Char":    return "char?";
-                    case "Object":  return "object?";
+                    case "Char": return "char?";
+                    case "Object": return "object?";
                     default:
                         break;
                 };
@@ -224,22 +254,22 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         {
             if (typeDefinition.Container is CsNameSpace { Name: "System" })
             {
-                switch(typeDefinition.Name)
+                switch (typeDefinition.Name)
                 {
-                    case "SByte":   return "sbyte";
-                    case "Int16":   return "short";
-                    case "Int32":   return "int";
-                    case "Int64":   return "long";
-                    case "Byte":    return "byte";
-                    case "UInt16":  return "ushort";
-                    case "UInt32":  return "uint";
-                    case "UInt64":  return "ulong";
-                    case "Single":  return "float";
-                    case "Double":  return "double";
+                    case "SByte": return "sbyte";
+                    case "Int16": return "short";
+                    case "Int32": return "int";
+                    case "Int64": return "long";
+                    case "Byte": return "byte";
+                    case "UInt16": return "ushort";
+                    case "UInt32": return "uint";
+                    case "UInt64": return "ulong";
+                    case "Single": return "float";
+                    case "Double": return "double";
                     case "Decimal": return "decimal";
-                    case "Char":    return "char";
-                    case "Object":  return "object";
-                    case "Void":    return "void";
+                    case "Char": return "char";
+                    case "Object": return "object";
+                    case "Void": return "void";
                     default:
                         break;
                 };
@@ -248,5 +278,4 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
             return null;
         }
     }
-
 }
