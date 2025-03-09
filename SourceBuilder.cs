@@ -170,14 +170,14 @@ internal class SourceBuilder : IDisposable
         InternalAppend("\r\n".AsSpan());
     }
 
-    public _BlockEndDisposable BeginTypeDefinitionBlock(CsTypeDeclaration typeDeclaration, string? classDeclarationLineTail = null)
+    public _BlockEndDisposable BeginTypeDefinitionBlock(CsTypeDeclaration typeDeclaration, TypeDefinitionBlockOptions options = default)
     {
         if (typeDeclaration is not CsUserDefinableTypeDeclaration userDefinableTypeDeclaration)
             throw new ArgumentException(null, nameof(typeDeclaration));
 
-        return beginTypeBlock(this, typeDeclaration, isDestinationType: true, classDeclarationLineTail);
+        return beginTypeBlock(this, typeDeclaration, isDestinationType: true, options);
 
-        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, CsTypeDeclaration typeDeclaration, bool isDestinationType, string? typeDeclarationLineTail)
+        static _BlockEndDisposable beginTypeBlock(SourceBuilder self, CsTypeDeclaration typeDeclaration, bool isDestinationType, TypeDefinitionBlockOptions options)
         {
             if (typeDeclaration is not CsUserDefinableTypeDeclaration userDefinableTypeDeclaration)
                 throw new NotSupportedException();
@@ -193,7 +193,7 @@ internal class SourceBuilder : IDisposable
             else if (userDefinableTypeDeclaration.Container is CsTypeDeclaration typeInfo)
             {
                 hasOuterBlock = true;
-                outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, null);
+                outerBlockEnd = beginTypeBlock(self, typeInfo, isDestinationType: false, default);
             }
 
             self.PutIndentSpace();
@@ -286,17 +286,17 @@ internal class SourceBuilder : IDisposable
                 {
                     var inheritTypeCount = 0;
 
-                    if (userDefinableTypeDeclaration is CsClass { BaseType: { } baseType })
+                    if (!options.OmitBaseType && userDefinableTypeDeclaration is CsClass { BaseType: { } baseType })
                         inheritTypeCount += 1;
                     else
                         baseType = null;
 
-                    if (userDefinableTypeDeclaration is CsClass { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
+                    if (!options.OmitInterfaces && userDefinableTypeDeclaration is CsClass { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
                         inheritTypeCount += classInheritInterfaces.Length;
                     else
                         classInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
 
-                    if (userDefinableTypeDeclaration is CsStruct { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
+                    if (!options.OmitInterfaces && userDefinableTypeDeclaration is CsStruct { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
                         inheritTypeCount += structInheritInterfaces.Length;
                     else
                         structInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
@@ -323,9 +323,9 @@ internal class SourceBuilder : IDisposable
                     }
                 }
 
-                if (typeDeclarationLineTail is not null)
+                if (options.TypeDeclarationLineTail is not null)
                 {
-                    self.Append(typeDeclarationLineTail);
+                    self.Append(options.TypeDeclarationLineTail);
                 }
             }
 

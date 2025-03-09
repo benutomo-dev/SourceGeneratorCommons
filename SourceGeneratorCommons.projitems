@@ -53,6 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\TypeSymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TypeDefinitionBlockOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
