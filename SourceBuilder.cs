@@ -6,6 +6,7 @@ using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace SourceGeneratorCommons;
@@ -217,12 +218,16 @@ internal class SourceBuilder : IDisposable
                     _ => "",
                 });
 
-                self.Append("partial ");
+                if (!options.OmitPartialKeyword)
+                    self.Append("partial ");
+
                 self.Append("class ");
             }
             else if (userDefinableTypeDeclaration is CsInterface interfaceDeclaration)
             {
-                self.Append("partial ");
+                if (!options.OmitPartialKeyword)
+                    self.Append("partial ");
+
                 self.Append("interface ");
             }
             else if (userDefinableTypeDeclaration is CsStruct structDeclaration)
@@ -232,7 +237,9 @@ internal class SourceBuilder : IDisposable
                 if (structDeclaration.IsRef)
                     self.Append("ref ");
 
-                self.Append("partial ");
+                if (!options.OmitPartialKeyword)
+                    self.Append("partial ");
+
                 self.Append("struct ");
             }
             else if (userDefinableTypeDeclaration is CsEnum enumDeclaration)
@@ -247,17 +254,17 @@ internal class SourceBuilder : IDisposable
             self.Append(userDefinableTypeDeclaration.Name);
 
 
-            if (userDefinableTypeDeclaration is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams })
+            if (userDefinableTypeDeclaration is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams1 })
             {
                 self.Append("<");
 
-                for (int i = 0; i < genericTypeParams.Length; i++)
+                for (int i = 0; i < genericTypeParams1.Length; i++)
                 {
-                    var genericTypeArg = genericTypeParams[i];
+                    var genericTypeArg = genericTypeParams1[i];
 
                     self.Append(genericTypeArg.Name);
 
-                    if (i < genericTypeParams.Length - 1)
+                    if (i < genericTypeParams1.Length - 1)
                     {
                         self.Append(", ");
                     }
@@ -330,6 +337,9 @@ internal class SourceBuilder : IDisposable
             }
 
             self.AppendLine("");
+
+            if (!options.OmitGenericConstraints && userDefinableTypeDeclaration is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams2 } )
+                self.AppendGenericConstraintsLines(genericTypeParams2);
 
             if (hasOuterBlock)
                 return self.BeginBlock().Combine(outerBlockEnd);
@@ -444,67 +454,9 @@ internal class SourceBuilder : IDisposable
         }
         AppendLine("");
 
-        if (!methodDefinitionInfo.GenericTypeParams.IsDefaultOrEmpty)
-        {
-            var genericTypeParams = methodDefinitionInfo.GenericTypeParams.Values.Where(v => v.Where.HasValue).ToArray();
-            if (genericTypeParams.Length > 0)
-            {
-                using (BeginIndent())
-                {
-                    foreach (var genericTypeParam in genericTypeParams)
-                    {
-                        PutIndentSpace();
-                        Append("where ");
-                        Append(genericTypeParam.Name);
-                        Append(" : ");
-
-                        var constraints = genericTypeParam.Where!.Value;
-
-                        bool existsLeadingConstraint = false;
-
-                        appendConstraint(this, ref existsLeadingConstraint, constraints.TypeCategory switch
-                        {
-                            CsGenericConstraintTypeCategory.Struct => "struct",
-                            CsGenericConstraintTypeCategory.Class => "class",
-                            CsGenericConstraintTypeCategory.NullableClass => "class?",
-                            CsGenericConstraintTypeCategory.NotNull => "notnull",
-                            CsGenericConstraintTypeCategory.Unmanaged => "unmanaged",
-                            _ => null,
-                        });
-
-                        appendConstraint(this, ref existsLeadingConstraint, constraints.HaveDefaultConstructor switch
-                        {
-                            true => "new()",
-                            _ => null,
-                        });
-
-                        appendConstraint(this, ref existsLeadingConstraint, constraints.BaseType?.ToString());
-
-                        foreach (var interfaceConstraint in constraints.Interfaces.Values)
-                        {
-                            appendConstraint(this, ref existsLeadingConstraint, interfaceConstraint.ToString());
-                        }
-
-                        AppendLine("");
-                    }
-                }
-            }
-        }
-    
+        AppendGenericConstraintsLines(methodDefinitionInfo.GenericTypeParams);
+        
         return BeginBlock();
-
-
-        static void appendConstraint(SourceBuilder self, ref bool existsLeadingConstraint, string? constraint)
-        {
-            if (constraint is null)
-                return;
-
-            if (existsLeadingConstraint)
-                self.Append(", ");
-
-            self.Append(constraint);
-            existsLeadingConstraint = true;
-        }
     }
 
     public _BlockEndDisposable BeginBlock(ReadOnlySpan<char> blockHeadLine)
@@ -545,6 +497,66 @@ internal class SourceBuilder : IDisposable
         _currentIndentCount--;
     }
 
+    private void AppendGenericConstraintsLines(EquatableArray<CsGenericTypeParam> genericTypeParams)
+    {
+        if (genericTypeParams.IsDefaultOrEmpty)
+            return;
+
+        if (genericTypeParams.Values.Any(v => v.Where.HasValue))
+            return;
+
+        using (BeginIndent())
+        {
+            foreach (var genericTypeParam in genericTypeParams.Values.Where(v => v.Where.HasValue))
+            {
+                PutIndentSpace();
+                Append("where ");
+                Append(genericTypeParam.Name);
+                Append(" : ");
+
+                var constraints = genericTypeParam.Where!.Value;
+
+                bool existsLeadingConstraint = false;
+
+                appendConstraint(this, ref existsLeadingConstraint, constraints.TypeCategory switch
+                {
+                    CsGenericConstraintTypeCategory.Struct => "struct",
+                    CsGenericConstraintTypeCategory.Class => "class",
+                    CsGenericConstraintTypeCategory.NullableClass => "class?",
+                    CsGenericConstraintTypeCategory.NotNull => "notnull",
+                    CsGenericConstraintTypeCategory.Unmanaged => "unmanaged",
+                    _ => null,
+                });
+
+                appendConstraint(this, ref existsLeadingConstraint, constraints.HaveDefaultConstructor switch
+                {
+                    true => "new()",
+                    _ => null,
+                });
+
+                appendConstraint(this, ref existsLeadingConstraint, constraints.BaseType?.ToString());
+
+                foreach (var interfaceConstraint in constraints.Interfaces.Values)
+                {
+                    appendConstraint(this, ref existsLeadingConstraint, interfaceConstraint.ToString());
+                }
+
+                AppendLine("");
+            }
+        }
+
+        static void appendConstraint(SourceBuilder self, ref bool existsLeadingConstraint, string? constraint)
+        {
+            if (constraint is null)
+                return;
+
+            if (existsLeadingConstraint)
+                self.Append(", ");
+
+            self.Append(constraint);
+            existsLeadingConstraint = true;
+        }
+    }
 
     public ref struct _BlockEndDisposable
     {
