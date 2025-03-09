@@ -143,13 +143,16 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         void write(StringBuilder builder, CsTypeDeclaration typeDefinition, ReadOnlySpan<EquatableArray<CsTypeReference>> typeArgs)
         {
             if (typeDefinition.Container is CsTypeDeclaration containerType)
-                write(builder, containerType, typeArgs.Slice(0, Math.Max(0, typeArgs.Length - 1)));
-
-            if (typeDefinition.Container is not null)
             {
-
-                builder.Append(typeDefinition.Container.FullName);
+                write(builder, containerType, typeArgs.Slice(0, Math.Max(0, typeArgs.Length - 1)));
                 builder.Append('.');
+            }
+            else if (typeDefinition.Container is not null)
+            {
+                builder.Append(typeDefinition.Container.FullName);
+
+                if (!string.IsNullOrWhiteSpace(typeDefinition.Container.Name))
+                    builder.Append('.');
             }
 
             builder.Append(typeDefinition.Name);
