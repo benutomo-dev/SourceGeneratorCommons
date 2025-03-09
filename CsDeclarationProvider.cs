@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -131,14 +130,17 @@ internal class CsDeclarationProvider
         }
     }
 
+    private CancellationToken _rootCancellationToken;
 
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
 
     private HashTable<ITypeSymbol, CsTypeReference> _typeReferenceDictionary;
 
-    public CsDeclarationProvider()
+    public CsDeclarationProvider(CancellationToken rootCancellationToken)
     {
         var lockObj = new Lock();
+
+        _rootCancellationToken = rootCancellationToken;
 
         _typeDeclarationDictionary = new HashTable<ITypeSymbol, CsTypeDeclaration>(lockObj, SymbolEqualityComparer.Default);
 
@@ -147,31 +149,39 @@ internal class CsDeclarationProvider
 
     internal CsTypeDeclaration GetTypeDeclaration(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
-        ((ILazyConstructionRoot)typeDeclaration).ConstructionFullCompleted.Wait();
+        ((ILazyConstructionRoot)typeDeclaration).ConstructionFullCompleted.Wait(_rootCancellationToken);
 
         return typeDeclaration;
     }
 
     internal CsTypeReference GetTypeReference(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         var typeReference = GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
-        ((ILazyConstructionRoot)typeReference).ConstructionFullCompleted.Wait();
+        ((ILazyConstructionRoot)typeReference).ConstructionFullCompleted.Wait(_rootCancellationToken);
 
         return typeReference;
     }
 
-    internal CsMethodDeclaration GetMethodDeclaration(IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    internal CsMethodDeclaration GetMethodDeclaration(IMethodSymbol methodSymbol)
     {
-        return GetMethodDeclarationInternal(methodSymbol, cancellationToken);
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        return GetMethodDeclarationInternal(methodSymbol);
     }
 
     private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         if (_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
             return cachedTypeDeclaration;
 
@@ -180,6 +190,8 @@ internal class CsDeclarationProvider
 
     private CsTypeReference GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReferenceInfo))
             return cachedTypeReferenceInfo;
 
@@ -188,8 +200,10 @@ internal class CsDeclarationProvider
         return CreateAndCacheTypeReference(typeDeclaration, typeSymbol);
     }
 
-    private CsMethodDeclaration GetMethodDeclarationInternal(IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    private CsMethodDeclaration GetMethodDeclarationInternal(IMethodSymbol methodSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType);
 
         var methodModifier = (methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual) switch
@@ -216,7 +230,7 @@ internal class CsDeclarationProvider
         CsAccessibility accessibility;
         if (methodSymbol.IsPartialDefinition && !methodSymbol.DeclaringSyntaxReferences.IsDefaultOrEmpty)
         {
-            var methodDeclarationSyntax = (MethodDeclarationSyntax)methodSymbol.DeclaringSyntaxReferences[0].GetSyntax(cancellationToken);
+            var methodDeclarationSyntax = (MethodDeclarationSyntax)methodSymbol.DeclaringSyntaxReferences[0].GetSyntax(_rootCancellationToken);
             (isReadOnly, accessibility) = FromMethodDeclarationSyntax(methodDeclarationSyntax);
         }
         else
@@ -268,6 +282,8 @@ internal class CsDeclarationProvider
 
     private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         bool isAdded;
 
         if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
@@ -473,6 +489,8 @@ internal class CsDeclarationProvider
 
     private CsTypeReference CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         var typeReference = _typeReferenceDictionary.GetOrAdd(typeSymbol, (self: this, csTypeDeclaration, typeSymbol),
             static (typeSymbol, createArg) =>
             {
@@ -521,6 +539,8 @@ internal class CsDeclarationProvider
 
     private GenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         GenericConstraintTypeCategory genericConstraintTypeCategory;
         if (typeParameterSymbol.HasReferenceTypeConstraint)
         {
@@ -567,6 +587,8 @@ internal class CsDeclarationProvider
 
     private MethodParam BuildMethodParam(IParameterSymbol parameterSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type);
 
         var paramModifier = parameterSymbol.RefKind switch
@@ -590,6 +612,8 @@ internal class CsDeclarationProvider
 
     private ITypeContainer BuildContainer(ITypeSymbol typeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         ITypeContainer? container;
 
         if (typeSymbol.ContainingType is null)
@@ -609,6 +633,8 @@ internal class CsDeclarationProvider
 
     private EquatableArray<GenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol)
     {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
         EquatableArray<GenericTypeParam> genericTypeParams;
 
         if (!namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
@@ -636,7 +662,9 @@ internal class CsDeclarationProvider
 
     private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol)
     {
-        var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v)).ToImmutableArray().ToEquatableArray();
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        var interfaces = namedTypeSymbol.Interfaces.Select(GetTypeReferenceFromCachedTypeReferenceFirst).ToImmutableArray().ToEquatableArray();
         return interfaces;
     }
 }
