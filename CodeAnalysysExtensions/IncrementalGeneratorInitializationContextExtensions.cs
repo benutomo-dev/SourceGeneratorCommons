@@ -1,5 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
-using SourceGeneratorCommons.CSharpDeclarations;
+using SourceGeneratorCommons.CSharp.Declarations;
 
 namespace SourceGeneratorCommons;
 

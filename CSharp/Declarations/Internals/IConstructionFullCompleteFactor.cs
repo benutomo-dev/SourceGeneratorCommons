@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons.CSharpDeclarations.Internals;
+﻿namespace SourceGeneratorCommons.CSharp.Declarations.Internals;
 
 internal interface IConstructionFullCompleteFactor
 {

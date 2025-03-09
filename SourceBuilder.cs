@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using SourceGeneratorCommons.Collections.Generic;
-using SourceGeneratorCommons.CSharpDeclarations;
+using SourceGeneratorCommons.CSharp.Declarations;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;

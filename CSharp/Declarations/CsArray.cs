@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons.CSharpDeclarations;
+﻿namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 {

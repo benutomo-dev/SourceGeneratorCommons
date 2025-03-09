@@ -1,4 +1,4 @@
-﻿namespace SourceGeneratorCommons.CSharpDeclarations;
+﻿namespace SourceGeneratorCommons.CSharp.Declarations;
 
 enum CsEnumUnderlyingType
 {

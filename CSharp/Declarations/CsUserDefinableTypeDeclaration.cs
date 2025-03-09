@@ -1,6 +1,6 @@
-﻿using SourceGeneratorCommons.CSharpDeclarations.Internals;
+﻿using SourceGeneratorCommons.CSharp.Declarations.Internals;
 
-namespace SourceGeneratorCommons.CSharpDeclarations;
+namespace SourceGeneratorCommons.CSharp.Declarations;
 
 abstract class CsUserDefinableTypeDeclaration : CsTypeDeclaration, IEquatable<CsUserDefinableTypeDeclaration>
 {

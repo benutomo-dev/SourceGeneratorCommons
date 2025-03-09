@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.Collections.Special;
-using SourceGeneratorCommons.CSharpDeclarations.Internals;
+using SourceGeneratorCommons.CSharp.Declarations.Internals;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace SourceGeneratorCommons.CSharpDeclarations;
+namespace SourceGeneratorCommons.CSharp.Declarations;
 
 internal class CsDeclarationProvider
 {
