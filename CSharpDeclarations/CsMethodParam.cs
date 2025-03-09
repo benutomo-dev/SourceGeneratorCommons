@@ -1,9 +1,9 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-record class MethodParam(
+record class CsMethodParam(
     CsTypeReference Type,
     string Name,
-    ParamModifier Modifier = ParamModifier.Default,
+    CsParamModifier Modifier = CsParamModifier.Default,
     bool IsScoped = false
     )
 {

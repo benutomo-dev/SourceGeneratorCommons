@@ -2,17 +2,17 @@
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-record class CsMethodDeclaration(
+record class CsMethod(
     string Name,
     CsTypeReference ReturnType,
-    ReturnModifier ReturnModifier = ReturnModifier.Default,
+    CsReturnModifier ReturnModifier = CsReturnModifier.Default,
     bool IsStatic = false,
     bool IsAsync = false,
     bool IsReadOnly = false,
-    EquatableArray<MethodParam> Params = default,
-    EquatableArray<GenericTypeParam> GenericTypeParams = default,
+    EquatableArray<CsMethodParam> Params = default,
+    EquatableArray<CsGenericTypeParam> GenericTypeParams = default,
     CsAccessibility Accessibility = CsAccessibility.Default,
-    MethodModifier MethodModifier = MethodModifier.Default
+    CsMethodModifier MethodModifier = CsMethodModifier.Default
     )
 {
     public bool IsVoidMethod => ReturnType.ToString() == "void";

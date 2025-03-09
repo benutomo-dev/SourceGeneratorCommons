@@ -1,6 +1,6 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-enum EnumUnderlyingType
+enum CsEnumUnderlyingType
 {
     Int32,
     SByte,

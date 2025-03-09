@@ -183,7 +183,7 @@ internal class SourceBuilder : IDisposable
             bool hasOuterBlock = false;
             _BlockEndDisposable outerBlockEnd = default;
 
-            if (userDefinableTypeDeclaration.Container is NameSpaceInfo nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
+            if (userDefinableTypeDeclaration.Container is CsNameSpace nameSpace && !string.IsNullOrWhiteSpace(nameSpace.Name))
             {
                 hasOuterBlock = true;
                 outerBlockEnd = beginNameSpace(self, nameSpace);
@@ -205,25 +205,25 @@ internal class SourceBuilder : IDisposable
                 _ => "",
             });
 
-            if (userDefinableTypeDeclaration is CsClassDeclaration classDeclaration)
+            if (userDefinableTypeDeclaration is CsClass classDeclaration)
             {
                 self.Append(classDeclaration.ClassModifier switch
                 {
-                    ClassModifier.Sealed => "sealed ",
-                    ClassModifier.Abstract => "abstract ",
-                    ClassModifier.Static => "static ",
+                    CsClassModifier.Sealed => "sealed ",
+                    CsClassModifier.Abstract => "abstract ",
+                    CsClassModifier.Static => "static ",
                     _ => "",
                 });
 
                 self.Append("partial ");
                 self.Append("class ");
             }
-            else if (userDefinableTypeDeclaration is CsInterfaceDeclaration interfaceDeclaration)
+            else if (userDefinableTypeDeclaration is CsInterface interfaceDeclaration)
             {
                 self.Append("partial ");
                 self.Append("interface ");
             }
-            else if (userDefinableTypeDeclaration is CsStructDeclaration structDeclaration)
+            else if (userDefinableTypeDeclaration is CsStruct structDeclaration)
             {
                 if (structDeclaration.IsReadOnly)
                     self.Append("readonly ");
@@ -233,7 +233,7 @@ internal class SourceBuilder : IDisposable
                 self.Append("partial ");
                 self.Append("struct ");
             }
-            else if (userDefinableTypeDeclaration is CsEnumDeclaration enumDeclaration)
+            else if (userDefinableTypeDeclaration is CsEnum enumDeclaration)
             {
                 self.Append("enum ");
             }
@@ -266,17 +266,17 @@ internal class SourceBuilder : IDisposable
 
             if (isDestinationType)
             {
-                if (userDefinableTypeDeclaration is CsEnumDeclaration enumDeclaration2)
+                if (userDefinableTypeDeclaration is CsEnum enumDeclaration2)
                 {
                     self.Append(enumDeclaration2.UnderlyingType switch
                     {
-                        EnumUnderlyingType.Byte => " : byte",
-                        EnumUnderlyingType.Int16 => " : short",
-                        EnumUnderlyingType.Int64 => " : long",
-                        EnumUnderlyingType.SByte => " : sbyte",
-                        EnumUnderlyingType.UInt16 => " : ushort",
-                        EnumUnderlyingType.UInt32 => " : uint",
-                        EnumUnderlyingType.UInt64 => " : ulong",
+                        CsEnumUnderlyingType.Byte => " : byte",
+                        CsEnumUnderlyingType.Int16 => " : short",
+                        CsEnumUnderlyingType.Int64 => " : long",
+                        CsEnumUnderlyingType.SByte => " : sbyte",
+                        CsEnumUnderlyingType.UInt16 => " : ushort",
+                        CsEnumUnderlyingType.UInt32 => " : uint",
+                        CsEnumUnderlyingType.UInt64 => " : ulong",
                         _ => "",
                     });
                 }
@@ -284,17 +284,17 @@ internal class SourceBuilder : IDisposable
                 {
                     var inheritTypeCount = 0;
 
-                    if (userDefinableTypeDeclaration is CsClassDeclaration { BaseType: { } baseType })
+                    if (userDefinableTypeDeclaration is CsClass { BaseType: { } baseType })
                         inheritTypeCount += 1;
                     else
                         baseType = null;
 
-                    if (userDefinableTypeDeclaration is CsClassDeclaration { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
+                    if (userDefinableTypeDeclaration is CsClass { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
                         inheritTypeCount += classInheritInterfaces.Length;
                     else
                         classInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
 
-                    if (userDefinableTypeDeclaration is CsStructDeclaration { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
+                    if (userDefinableTypeDeclaration is CsStruct { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
                         inheritTypeCount += structInheritInterfaces.Length;
                     else
                         structInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
@@ -335,7 +335,7 @@ internal class SourceBuilder : IDisposable
                 return self.BeginBlock();
         }
 
-        static _BlockEndDisposable beginNameSpace(SourceBuilder self, NameSpaceInfo namespaceSymbol)
+        static _BlockEndDisposable beginNameSpace(SourceBuilder self, CsNameSpace namespaceSymbol)
         {
             self.PutIndentSpace();
             self.Append("namespace ");
@@ -346,7 +346,7 @@ internal class SourceBuilder : IDisposable
         }
     }
 
-    public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethodDeclaration methodDefinitionInfo, string? methodDeclarationLineTail = null)
+    public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethod methodDefinitionInfo, string? methodDeclarationLineTail = null)
     {
         PutIndentSpace();
         Append(methodDefinitionInfo.Accessibility switch
@@ -367,17 +367,17 @@ internal class SourceBuilder : IDisposable
 
         Append(methodDefinitionInfo.MethodModifier switch
         {
-            MethodModifier.SealedOverride => "sealed override ",
-            MethodModifier.Override       => "override ",
-            MethodModifier.Virtual        => "virtual ",
-            MethodModifier.Abstract       => "abstract ",
+            CsMethodModifier.SealedOverride => "sealed override ",
+            CsMethodModifier.Override       => "override ",
+            CsMethodModifier.Virtual        => "virtual ",
+            CsMethodModifier.Abstract       => "abstract ",
             _ => "",
         });
         Append("partial ");
         Append(methodDefinitionInfo.ReturnModifier switch
         {
-            ReturnModifier.RefReadonly=> "ref readonly ",
-            ReturnModifier.Ref => "ref ",
+            CsReturnModifier.RefReadonly=> "ref readonly ",
+            CsReturnModifier.Ref => "ref ",
             _ => "",
         });
         Append(methodDefinitionInfo.ReturnType.ToString());
@@ -420,10 +420,10 @@ internal class SourceBuilder : IDisposable
 
                 Append(param.Modifier switch
                 {
-                    ParamModifier.RefReadOnly => "ref readonly ",
-                    ParamModifier.In => "in ",
-                    ParamModifier.Ref => "ref ",
-                    ParamModifier.Out => "out ",
+                    CsParamModifier.RefReadOnly => "ref readonly ",
+                    CsParamModifier.In => "in ",
+                    CsParamModifier.Ref => "ref ",
+                    CsParamModifier.Out => "out ",
                     _ => "",
                 });
 
@@ -462,11 +462,11 @@ internal class SourceBuilder : IDisposable
 
                         appendConstraint(this, ref existsLeadingConstraint, constraints.TypeCategory switch
                         {
-                            GenericConstraintTypeCategory.Struct => "struct",
-                            GenericConstraintTypeCategory.Class => "class",
-                            GenericConstraintTypeCategory.NullableClass => "class?",
-                            GenericConstraintTypeCategory.NotNull => "notnull",
-                            GenericConstraintTypeCategory.Unmanaged => "unmanaged",
+                            CsGenericConstraintTypeCategory.Struct => "struct",
+                            CsGenericConstraintTypeCategory.Class => "class",
+                            CsGenericConstraintTypeCategory.NullableClass => "class?",
+                            CsGenericConstraintTypeCategory.NotNull => "notnull",
+                            CsGenericConstraintTypeCategory.Unmanaged => "unmanaged",
                             _ => null,
                         });
 

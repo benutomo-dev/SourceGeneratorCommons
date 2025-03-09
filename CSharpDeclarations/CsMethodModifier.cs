@@ -1,9 +1,10 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-enum ClassModifier
+enum CsMethodModifier
 {
     Default,
-    Sealed,
     Abstract,
-    Static,
+    Virtual,
+    Override,
+    SealedOverride,
 }

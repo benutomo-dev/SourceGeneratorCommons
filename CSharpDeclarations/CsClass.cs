@@ -1,21 +1,23 @@
 ﻿using SourceGeneratorCommons.Collections.Generic;
+using System.ComponentModel;
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-sealed class CsClassDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsClassDeclaration>
+sealed class CsClass : CsGenericDefinableTypeDeclaration, IEquatable<CsClass>
 {
     public CsTypeReference? BaseType { get; private set; }
 
-    public ClassModifier ClassModifier {get;}
+    public CsClassModifier ClassModifier {get;}
 
-    public CsClassDeclaration(ITypeContainer? container, string name, EquatableArray<GenericTypeParam> genericTypeParams = default, CsTypeReference? baseType = null, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, ClassModifier classModifier = ClassModifier.Default)
+    public CsClass(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsTypeReference? baseType = null, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, CsClassModifier classModifier = CsClassModifier.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
         BaseType = baseType;
         ClassModifier = classModifier;
     }
 
-    public CsClassDeclaration(string name, CsAccessibility accessibility, ClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>> complete)
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public CsClass(string name, CsAccessibility accessibility, CsClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>> complete)
         : base(name, accessibility, out var baseComplete)
     {
         ClassModifier = classModifier;
@@ -32,12 +34,12 @@ sealed class CsClassDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<
     }
 
     #region IEquatable
-    public override bool Equals(object? obj) => obj is CsClassDeclaration other && Equals(other);
+    public override bool Equals(object? obj) => obj is CsClass other && Equals(other);
 
     public sealed override bool Equals(CsGenericDefinableTypeDeclaration? other) => Equals((object?)other);
 
 
-    public bool Equals(CsClassDeclaration? other)
+    public bool Equals(CsClass? other)
     {
         if (!base.Equals(other))
             return false;

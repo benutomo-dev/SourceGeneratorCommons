@@ -19,6 +19,9 @@ public static class EquatableArray
     }
 }
 
+#if FeatureMemory
+[System.Runtime.CompilerServices.CollectionBuilder(typeof(EquatableArray), nameof(EquatableArray.Create))]
+#endif
 public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<EquatableArray<T>>
 {
 #pragma warning disable CA1000

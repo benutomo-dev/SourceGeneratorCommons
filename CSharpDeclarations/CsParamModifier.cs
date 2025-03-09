@@ -1,8 +1,10 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-enum ReturnModifier
+enum CsParamModifier
 {
     Default,
     Ref,
-    RefReadonly,
+    Out,
+    In,
+    RefReadOnly,
 }

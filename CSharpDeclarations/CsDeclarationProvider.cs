@@ -52,7 +52,7 @@ internal class CsDeclarationProvider
         return typeReference;
     }
 
-    internal CsMethodDeclaration GetMethodDeclaration(IMethodSymbol methodSymbol)
+    internal CsMethod GetMethodDeclaration(IMethodSymbol methodSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
@@ -81,7 +81,7 @@ internal class CsDeclarationProvider
         return CreateAndCacheTypeReference(typeDeclaration, typeSymbol);
     }
 
-    private CsMethodDeclaration GetMethodDeclarationInternal(IMethodSymbol methodSymbol)
+    private CsMethod GetMethodDeclarationInternal(IMethodSymbol methodSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
@@ -89,18 +89,18 @@ internal class CsDeclarationProvider
 
         var methodModifier = (methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual) switch
         {
-            (_, _, _, true) => MethodModifier.Virtual,
-            (_, _, true, _) => MethodModifier.Abstract,
-            (true, true, _, _) => MethodModifier.SealedOverride,
-            (_, true, _, _) => MethodModifier.Override,
-            _ => MethodModifier.Default,
+            (_, _, _, true) => CsMethodModifier.Virtual,
+            (_, _, true, _) => CsMethodModifier.Abstract,
+            (true, true, _, _) => CsMethodModifier.SealedOverride,
+            (_, true, _, _) => CsMethodModifier.Override,
+            _ => CsMethodModifier.Default,
         };
 
         var returnModifier = (methodSymbol.ReturnsByRef, methodSymbol.ReturnsByRefReadonly) switch
         {
-            (_, true) => ReturnModifier.RefReadonly,
-            (true, _) => ReturnModifier.Ref,
-            _ => ReturnModifier.Default,
+            (_, true) => CsReturnModifier.RefReadonly,
+            (true, _) => CsReturnModifier.Ref,
+            _ => CsReturnModifier.Default,
         };
 
         var methodParams = methodSymbol.Parameters.Select(v => BuildMethodParam(v)).ToImmutableArray();
@@ -120,7 +120,7 @@ internal class CsDeclarationProvider
             accessibility = methodSymbol.DeclaredAccessibility.ToCSharpAccessibility();
         }
 
-        return new CsMethodDeclaration(methodSymbol.Name, returnType, returnModifier, methodSymbol.IsStatic, methodSymbol.IsAsync, isReadOnly, methodParams, genericTypeParams, accessibility, methodModifier);
+        return new CsMethod(methodSymbol.Name, returnType, returnModifier, methodSymbol.IsStatic, methodSymbol.IsAsync, isReadOnly, methodParams, genericTypeParams, accessibility, methodModifier);
 
 
         (bool isReadOnly, CsAccessibility accessibility) FromMethodDeclarationSyntax(MethodDeclarationSyntax methodDeclarationSyntax)
@@ -186,7 +186,7 @@ internal class CsDeclarationProvider
             var arrayDeclaration = _typeDeclarationDictionary.GetOrAdd(arrayTypeSymbol, ref completeArrayDeclaration,
                 static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeDeclaration>? completeArrayDeclaration) =>
                 {
-                    return new CsArrayDeclaration(arrayTypeSymbol.Name, arrayTypeSymbol.Rank, out completeArrayDeclaration);
+                    return new CsArray(arrayTypeSymbol.Name, arrayTypeSymbol.Rank, out completeArrayDeclaration);
                 },
                 out isAdded);
 
@@ -217,20 +217,20 @@ internal class CsDeclarationProvider
 
                         var underlyingType = namedTypeSymbol.EnumUnderlyingType switch
                         {
-                            { SpecialType: SpecialType.System_Byte } => EnumUnderlyingType.Byte,
-                            { SpecialType: SpecialType.System_Int16 } => EnumUnderlyingType.Int16,
-                            { SpecialType: SpecialType.System_Int32 } => EnumUnderlyingType.Int32,
-                            { SpecialType: SpecialType.System_Int64 } => EnumUnderlyingType.Int64,
-                            { SpecialType: SpecialType.System_SByte } => EnumUnderlyingType.SByte,
-                            { SpecialType: SpecialType.System_UInt16 } => EnumUnderlyingType.UInt16,
-                            { SpecialType: SpecialType.System_UInt32 } => EnumUnderlyingType.UInt32,
-                            { SpecialType: SpecialType.System_UInt64 } => EnumUnderlyingType.UInt64,
+                            { SpecialType: SpecialType.System_Byte } => CsEnumUnderlyingType.Byte,
+                            { SpecialType: SpecialType.System_Int16 } => CsEnumUnderlyingType.Int16,
+                            { SpecialType: SpecialType.System_Int32 } => CsEnumUnderlyingType.Int32,
+                            { SpecialType: SpecialType.System_Int64 } => CsEnumUnderlyingType.Int64,
+                            { SpecialType: SpecialType.System_SByte } => CsEnumUnderlyingType.SByte,
+                            { SpecialType: SpecialType.System_UInt16 } => CsEnumUnderlyingType.UInt16,
+                            { SpecialType: SpecialType.System_UInt32 } => CsEnumUnderlyingType.UInt32,
+                            { SpecialType: SpecialType.System_UInt64 } => CsEnumUnderlyingType.UInt64,
                             _ => throw new NotSupportedException(),
                         };
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
-                        return new CsEnumDeclaration(namedTypeSymbol.Name, accessibility, underlyingType, out completeEnumDeclaration);
+                        return new CsEnum(namedTypeSymbol.Name, accessibility, underlyingType, out completeEnumDeclaration);
                     },
                     out isAdded);
 
@@ -248,24 +248,24 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Class)
             {
-                Action<ITypeContainer?, EquatableArray<GenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration = null;
 
                 var classDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeClassDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<GenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
                         var classModifier = namedTypeSymbol switch
                         {
-                            { IsVirtual: true } => ClassModifier.Abstract,
-                            { IsSealed: true } => ClassModifier.Sealed,
-                            { IsStatic: true } => ClassModifier.Static,
-                            _ => ClassModifier.Default,
+                            { IsVirtual: true } => CsClassModifier.Abstract,
+                            { IsSealed: true } => CsClassModifier.Sealed,
+                            { IsStatic: true } => CsClassModifier.Static,
+                            _ => CsClassModifier.Default,
                         };
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
-                        return new CsClassDeclaration(
+                        return new CsClass(
                             namedTypeSymbol.Name,
                             accessibility,
                             classModifier,
@@ -296,16 +296,16 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Interface)
             {
-                Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration = null;
 
                 var interfaceDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeInterfaceDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
-                        return new CsInterfaceDeclaration(
+                        return new CsInterface(
                             namedTypeSymbol.Name,
                             accessibility,
                             out completeInterfaceDeclaration);
@@ -330,16 +330,16 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Struct)
             {
-                Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration = null;
 
                 var structDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeStructDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
-                        return new CsStructDeclaration(
+                        return new CsStruct(
                             namedTypeSymbol.Name,
                             accessibility,
                             namedTypeSymbol.IsReadOnly,
@@ -418,31 +418,31 @@ internal class CsDeclarationProvider
         }
     }
 
-    private GenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol)
+    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        GenericConstraintTypeCategory genericConstraintTypeCategory;
+        CsGenericConstraintTypeCategory genericConstraintTypeCategory;
         if (typeParameterSymbol.HasReferenceTypeConstraint)
         {
             if (typeParameterSymbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
-                genericConstraintTypeCategory = GenericConstraintTypeCategory.NullableClass;
+                genericConstraintTypeCategory = CsGenericConstraintTypeCategory.NullableClass;
             else
-                genericConstraintTypeCategory = GenericConstraintTypeCategory.Class;
+                genericConstraintTypeCategory = CsGenericConstraintTypeCategory.Class;
         }
         else if (typeParameterSymbol.HasValueTypeConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Struct;
+            genericConstraintTypeCategory = CsGenericConstraintTypeCategory.Struct;
         else if (typeParameterSymbol.HasNotNullConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.NotNull;
+            genericConstraintTypeCategory = CsGenericConstraintTypeCategory.NotNull;
         else if (typeParameterSymbol.HasUnmanagedTypeConstraint)
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Unmanaged;
+            genericConstraintTypeCategory = CsGenericConstraintTypeCategory.Unmanaged;
         else
-            genericConstraintTypeCategory = GenericConstraintTypeCategory.Any;
+            genericConstraintTypeCategory = CsGenericConstraintTypeCategory.Any;
 
         var baseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => !v.IsAbstract);
         var interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.IsAbstract);
 
-        var constraints = new GenericTypeConstraints
+        var constraints = new CsGenericTypeConstraints
         {
             TypeCategory = genericConstraintTypeCategory,
             HaveDefaultConstructor = typeParameterSymbol.HasConstructorConstraint,
@@ -457,7 +457,7 @@ internal class CsDeclarationProvider
                 .ToImmutableArray(),
         };
 
-        var genericTypeParam = new GenericTypeParam
+        var genericTypeParam = new CsGenericTypeParam
         {
             Name = typeParameterSymbol.Name,
             Where = constraints,
@@ -466,7 +466,7 @@ internal class CsDeclarationProvider
         return genericTypeParam;
     }
 
-    private MethodParam BuildMethodParam(IParameterSymbol parameterSymbol)
+    private CsMethodParam BuildMethodParam(IParameterSymbol parameterSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
@@ -474,13 +474,13 @@ internal class CsDeclarationProvider
 
         var paramModifier = parameterSymbol.RefKind switch
         {
-            RefKind.Ref => ParamModifier.Ref,
-            RefKind.In => ParamModifier.In,
-            RefKind.Out => ParamModifier.Out,
+            RefKind.Ref => CsParamModifier.Ref,
+            RefKind.In => CsParamModifier.In,
+            RefKind.Out => CsParamModifier.Out,
 #if CODE_ANALYSYS4_8_0_OR_GREATER
-            RefKind.RefReadOnlyParameter => ParamModifier.RefReadOnly,
+            RefKind.RefReadOnlyParameter => CsParamModifier.RefReadOnly,
 #endif
-            _ => ParamModifier.Default,
+            _ => CsParamModifier.Default,
         };
 
         bool isScoped = false;
@@ -488,7 +488,7 @@ internal class CsDeclarationProvider
         isScoped = parameterSymbol.ScopedKind == ScopedKind.ScopedRef;
 #endif
 
-        return new MethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
+        return new CsMethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
     }
 
     private ITypeContainer BuildContainer(ITypeSymbol typeSymbol)
@@ -502,7 +502,7 @@ internal class CsDeclarationProvider
             var namespaceBuilder = new StringBuilder();
             SymbolExtensions.AppendFullNamespace(namespaceBuilder, typeSymbol.ContainingNamespace);
 
-            container = new NameSpaceInfo(namespaceBuilder.ToString());
+            container = new CsNameSpace(namespaceBuilder.ToString());
         }
         else
         {
@@ -512,17 +512,17 @@ internal class CsDeclarationProvider
         return container;
     }
 
-    private EquatableArray<GenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol)
+    private EquatableArray<CsGenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        EquatableArray<GenericTypeParam> genericTypeParams;
+        EquatableArray<CsGenericTypeParam> genericTypeParams;
 
         if (!namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
         {
             var originalDefinitionTypeSymbol = namedTypeSymbol.OriginalDefinition;
 
-            var typeParamsBuilder = ImmutableArray.CreateBuilder<GenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
+            var typeParamsBuilder = ImmutableArray.CreateBuilder<CsGenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
@@ -535,7 +535,7 @@ internal class CsDeclarationProvider
         }
         else
         {
-            genericTypeParams = EquatableArray<GenericTypeParam>.Empty;
+            genericTypeParams = EquatableArray<CsGenericTypeParam>.Empty;
         }
 
         return genericTypeParams;

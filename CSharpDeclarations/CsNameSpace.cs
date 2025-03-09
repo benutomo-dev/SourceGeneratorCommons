@@ -1,12 +1,12 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
+class CsNameSpace : ITypeContainer, IEquatable<CsNameSpace>
 {
     public string Name { get; }
 
     public string FullName => $"global::{Name}";
 
-    public NameSpaceInfo(string name)
+    public CsNameSpace(string name)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
     }
@@ -17,10 +17,10 @@ class NameSpaceInfo : ITypeContainer, IEquatable<NameSpaceInfo>
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as NameSpaceInfo);
+        return Equals(obj as CsNameSpace);
     }
 
-    public bool Equals(NameSpaceInfo? other)
+    public bool Equals(CsNameSpace? other)
     {
         return other is not null &&
                Name == other.Name;

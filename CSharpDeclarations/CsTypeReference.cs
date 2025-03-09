@@ -113,7 +113,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
         var builder = new StringBuilder();
 
-        if (TypeDefinition is { Name: "Nullable", Container: NameSpaceInfo { Name: "System" } } && !TypeArgs.IsDefaultOrEmpty && TypeArgs.Length == 1 && TypeArgs[0].Length == 1)
+        if (TypeDefinition is { Name: "Nullable", Container: CsNameSpace { Name: "System" } } && !TypeArgs.IsDefaultOrEmpty && TypeArgs.Length == 1 && TypeArgs[0].Length == 1)
         {
             var structTypeReference = TypeArgs[^1][0];
 
@@ -172,7 +172,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
         string? getNullableTypeKeyword(CsTypeDeclaration typeDefinition)
         {
-            if (typeDefinition.Container is NameSpaceInfo { Name: "System" })
+            if (typeDefinition.Container is CsNameSpace { Name: "System" })
             {
                 switch (typeDefinition.Name)
                 {
@@ -199,7 +199,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
         string? getTypeKeyword(CsTypeDeclaration typeDefinition)
         {
-            if (typeDefinition.Container is NameSpaceInfo { Name: "System" })
+            if (typeDefinition.Container is CsNameSpace { Name: "System" })
             {
                 switch(typeDefinition.Name)
                 {

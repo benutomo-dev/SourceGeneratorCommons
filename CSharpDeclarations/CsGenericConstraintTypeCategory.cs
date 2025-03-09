@@ -1,6 +1,6 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-enum GenericConstraintTypeCategory
+enum CsGenericConstraintTypeCategory
 {
     Any,
     Struct,

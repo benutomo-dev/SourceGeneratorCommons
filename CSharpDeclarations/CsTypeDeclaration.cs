@@ -201,7 +201,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             }
             else
             {
-                DebugSGen.Assert(container is NameSpaceInfo);
+                DebugSGen.Assert(container is CsNameSpace);
 
                 if (!string.IsNullOrWhiteSpace(container.Name))
                 {

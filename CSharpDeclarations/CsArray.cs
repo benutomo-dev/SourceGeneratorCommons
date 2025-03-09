@@ -1,18 +1,18 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-sealed class CsArrayDeclaration : CsTypeDeclaration, IEquatable<CsArrayDeclaration>
+sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 {
     public CsTypeDeclaration ElementType { get; private set; }
 
     public int Rank { get; }
 
-    public CsArrayDeclaration(ITypeContainer? typeContainer, string name, CsTypeDeclaration elementType, int rank = 1) : base(typeContainer, name)
+    public CsArray(ITypeContainer? typeContainer, string name, CsTypeDeclaration elementType, int rank = 1) : base(typeContainer, name)
     {
         Rank = rank;
         ElementType = elementType;
     }
 
-    public CsArrayDeclaration(string name, int rank, out Action<ITypeContainer?, CsTypeDeclaration> complete) : base(name, out var baseComplete)
+    public CsArray(string name, int rank, out Action<ITypeContainer?, CsTypeDeclaration> complete) : base(name, out var baseComplete)
     {
         Rank = rank;
         ElementType = default!;
@@ -32,12 +32,12 @@ sealed class CsArrayDeclaration : CsTypeDeclaration, IEquatable<CsArrayDeclarati
     }
 
     #region IEquatable
-    public override bool Equals(object? obj) => obj is CsArrayDeclaration other && Equals(other);
+    public override bool Equals(object? obj) => obj is CsArray other && Equals(other);
 
     public sealed override bool Equals(CsTypeDeclaration? other) => Equals((object?)other);
 
 
-    public bool Equals(CsArrayDeclaration? other)
+    public bool Equals(CsArray? other)
     {
         if (!base.Equals(other))
             return false;

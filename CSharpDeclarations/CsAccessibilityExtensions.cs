@@ -2,7 +2,7 @@
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-static class AccessibilityExtensions
+static class CsAccessibilityExtensions
 {
     public static CsAccessibility ToCSharpAccessibility(this Accessibility accessibility)
     {

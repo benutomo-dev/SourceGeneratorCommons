@@ -1,8 +1,8 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-enum TypeCategory
+enum CsReturnModifier
 {
-    Class,
-    Struct,
-    Enum
+    Default,
+    Ref,
+    RefReadonly,
 }

@@ -2,20 +2,20 @@
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-sealed class CsStructDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsStructDeclaration>
+sealed class CsStruct : CsGenericDefinableTypeDeclaration, IEquatable<CsStruct>
 {
     public bool IsReadOnly { get; }
 
     public bool IsRef { get; }
 
-    public CsStructDeclaration(ITypeContainer? container, string name, EquatableArray<GenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, bool isReadOnly = false, bool isRef = false)
+    public CsStruct(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, bool isReadOnly = false, bool isRef = false)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
         IsReadOnly = isReadOnly;
         IsRef = isRef;
     }
 
-    public CsStructDeclaration(string name, CsAccessibility accessibility, bool isReadOnly, bool isRef, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>> complete)
+    public CsStruct(string name, CsAccessibility accessibility, bool isReadOnly, bool isRef, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>> complete)
         : base(name, accessibility, out var baseComplete)
     {
         IsReadOnly = isReadOnly;
@@ -31,11 +31,11 @@ sealed class CsStructDeclaration : CsGenericDefinableTypeDeclaration, IEquatable
     }
 
     #region IEquatable
-    public override bool Equals(object? obj) => obj is CsStructDeclaration other && Equals(other);
+    public override bool Equals(object? obj) => obj is CsStruct other && Equals(other);
 
     public sealed override bool Equals(CsGenericDefinableTypeDeclaration? other) => Equals((object?)other);
 
-    public bool Equals(CsStructDeclaration? other)
+    public bool Equals(CsStruct? other)
     {
         if (!base.Equals(other))
             return false;

@@ -5,19 +5,19 @@ namespace SourceGeneratorCommons.CSharpDeclarations;
 
 abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsGenericDefinableTypeDeclaration>
 {
-    public EquatableArray<GenericTypeParam> GenericTypeParams { get; private set; }
+    public EquatableArray<CsGenericTypeParam> GenericTypeParams { get; private set; }
 
     public EquatableArray<CsTypeReference> Interfaces { get; private set; }
 
 
-    public CsGenericDefinableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<GenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsGenericDefinableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, accessibility)
     {
-        GenericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<GenericTypeParam>.Empty : genericTypeParams;
+        GenericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsGenericTypeParam>.Empty : genericTypeParams;
         Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeReference>.Empty : interfaces;
     }
 
-    public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
+    public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
         : base(name, accessibility, out var baseComplete)
     {
         complete = (container, genericTypeParams, interfaces, constructionFullCompleteFactors) =>
@@ -65,7 +65,7 @@ abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaratio
         if (!base.Equals(other))
             return false;
 
-        if (!EqualityComparer<EquatableArray<GenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams))
+        if (!EqualityComparer<EquatableArray<CsGenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams))
             return false;
 
         return true;

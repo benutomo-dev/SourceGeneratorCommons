@@ -1,16 +1,16 @@
 ﻿namespace SourceGeneratorCommons.CSharpDeclarations;
 
-sealed class CsEnumDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsEnumDeclaration>
+sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
 {
-    public EnumUnderlyingType UnderlyingType { get; }
+    public CsEnumUnderlyingType UnderlyingType { get; }
 
-    public CsEnumDeclaration(ITypeContainer? container, string name, CsAccessibility accessibility = CsAccessibility.Default, EnumUnderlyingType underlyingType = EnumUnderlyingType.Int32)
+    public CsEnum(ITypeContainer? container, string name, CsAccessibility accessibility = CsAccessibility.Default, CsEnumUnderlyingType underlyingType = CsEnumUnderlyingType.Int32)
         : base(container, name, accessibility)
     {
         UnderlyingType = underlyingType;
     }
 
-    public CsEnumDeclaration(string name, CsAccessibility accessibility, EnumUnderlyingType underlyingType, out Action<ITypeContainer?> complete)
+    public CsEnum(string name, CsAccessibility accessibility, CsEnumUnderlyingType underlyingType, out Action<ITypeContainer?> complete)
         : base(name, accessibility, out var baseComplete)
     {
         UnderlyingType = underlyingType;
@@ -22,11 +22,11 @@ sealed class CsEnumDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsEn
     }
 
     #region IEquatable
-    public override bool Equals(object? obj) => obj is CsEnumDeclaration other && Equals(other);
+    public override bool Equals(object? obj) => obj is CsEnum other && Equals(other);
 
     public sealed override bool Equals(CsUserDefinableTypeDeclaration? other) => Equals((object?)other);
 
-    public bool Equals(CsEnumDeclaration? other)
+    public bool Equals(CsEnum? other)
     {
         if (!base.Equals(other))
             return false;

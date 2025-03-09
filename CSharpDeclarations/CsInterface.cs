@@ -2,16 +2,16 @@
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-sealed class CsInterfaceDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsInterfaceDeclaration>
+sealed class CsInterface : CsGenericDefinableTypeDeclaration, IEquatable<CsInterface>
 {
-    public CsInterfaceDeclaration(ITypeContainer? container, string name, EquatableArray<GenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsInterface(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
 
     }
 
 
-    public CsInterfaceDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<GenericTypeParam>, EquatableArray<CsTypeReference>> complete)
+    public CsInterface(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>> complete)
         : base(name, accessibility, out var baseComplete)
     {
         complete = (container, genericTypeParams, interfaces) =>
@@ -24,11 +24,11 @@ sealed class CsInterfaceDeclaration : CsGenericDefinableTypeDeclaration, IEquata
     }
 
     #region IEquatable
-    public override bool Equals(object? obj) => obj is CsInterfaceDeclaration other && Equals(other);
+    public override bool Equals(object? obj) => obj is CsInterface other && Equals(other);
 
     public sealed override bool Equals(CsGenericDefinableTypeDeclaration? other) => Equals((object?)other);
 
-    public bool Equals(CsInterfaceDeclaration? other)
+    public bool Equals(CsInterface? other)
     {
         if (!base.Equals(other))
             return false;

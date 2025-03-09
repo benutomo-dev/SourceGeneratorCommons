@@ -3,8 +3,8 @@ using SourceGeneratorCommons.CSharpDeclarations.Internals;
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-internal record struct GenericTypeConstraints(
-    GenericConstraintTypeCategory TypeCategory = GenericConstraintTypeCategory.Any,
+internal record struct CsGenericTypeConstraints(
+    CsGenericConstraintTypeCategory TypeCategory = CsGenericConstraintTypeCategory.Any,
 
     bool HaveDefaultConstructor = false,
 

@@ -2,7 +2,7 @@
 
 namespace SourceGeneratorCommons.CSharpDeclarations;
 
-internal record struct GenericTypeParam(string Name, GenericTypeConstraints? Where = null) : ILazyConstructionOwner
+internal record struct CsGenericTypeParam(string Name, CsGenericTypeConstraints? Where = null) : ILazyConstructionOwner
 {
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
     {
