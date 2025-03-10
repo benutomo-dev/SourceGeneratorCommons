@@ -34,16 +34,16 @@ record class CsMethod(
         builder.Append(Name);
         if (!GenericTypeParams.IsDefaultOrEmpty)
         {
-            builder.Append("{");
+            builder.Append('{');
             builder.Append(GenericTypeParams[0].Name);
             for (int i = 1; i < GenericTypeParams.Length; i++)
             {
                 builder.Append(", ");
                 builder.Append(GenericTypeParams[i].Name);
             }
-            builder.Append("}");
+            builder.Append('}');
         }
-        builder.Append("(");
+        builder.Append('(');
         if (!Params.IsDefaultOrEmpty)
         {
             for (int i = 0; i < Params.Length; i++)
@@ -71,7 +71,7 @@ record class CsMethod(
                 builder.Append(Params[i].Type.Cref);
             }
         }
-        builder.Append(")");
+        builder.Append(')');
 
         var value = builder.ToString();
 

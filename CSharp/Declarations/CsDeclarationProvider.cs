@@ -16,7 +16,7 @@ internal class CsDeclarationProvider
 {
     public Compilation Compilation { get; }
 
-    private const int MaxNestCount = 30;
+    private const int MaxNestCount = 100;
 
     private CancellationToken _rootCancellationToken;
 
