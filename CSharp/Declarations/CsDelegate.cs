@@ -10,13 +10,13 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
 {
     public sealed override bool IsValueType => false;
 
-    public CsTypeReference ReturnType { get; private set; }
+    public CsTypeRefWithNullability ReturnType { get; private set; }
 
     public CsReturnModifier ReturnModifier { get; }
 
     public EquatableArray<CsMethodParam> MethodParams { get; private set; }
 
-    public CsDelegate(ITypeContainer? container, string name, CsTypeReference returnType, CsReturnModifier returnModifier = CsReturnModifier.Default, EquatableArray<CsMethodParam> methodParams = default, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsDelegate(ITypeContainer? container, string name, CsTypeRefWithNullability returnType, CsReturnModifier returnModifier = CsReturnModifier.Default, EquatableArray<CsMethodParam> methodParams = default, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, genericTypeParams, accessibility)
     {
         ReturnType = returnType;
@@ -24,7 +24,7 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
         MethodParams = methodParams.IsDefaultOrEmpty ? EquatableArray<CsMethodParam>.Empty : methodParams;
     }
 
-    public CsDelegate(string name, CsAccessibility accessibility, CsReturnModifier returnModifier, out Action<ITypeContainer?, CsTypeReference, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>> complete)
+    public CsDelegate(string name, CsAccessibility accessibility, CsReturnModifier returnModifier, out Action<ITypeContainer?, CsTypeRefWithNullability, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>> complete)
         : base(name, accessibility, out var baseComplete)
     {
         complete = (container, returnType, methodParams, genericTypeParams) =>
@@ -67,7 +67,7 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
         if (ReturnModifier != other.ReturnModifier)
             return false;
 
-        if (!EqualityComparer<CsTypeReference>.Default.Equals(ReturnType, other.ReturnType))
+        if (!EqualityComparer<CsTypeRefWithNullability>.Default.Equals(ReturnType, other.ReturnType))
             return false;
 
         if (!EqualityComparer<EquatableArray<CsMethodParam>>.Default.Equals(MethodParams, other.MethodParams))

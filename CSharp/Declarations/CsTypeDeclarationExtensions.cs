@@ -28,6 +28,7 @@ internal static class CsTypeDeclarationExtensions
             CsSpecialType.String => nameof(String),
             CsSpecialType.Guid => nameof(Guid),
             CsSpecialType.Decimal => nameof(Decimal),
+            CsSpecialType.Nullable => nameof(Nullable),
             _ => throw new ArgumentException(null, nameof(specialType)),
         };
 

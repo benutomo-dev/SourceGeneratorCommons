@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record class CsMethodParam(
-    CsTypeReference Type,
+    CsTypeRefWithNullability Type,
     string Name,
     CsParamModifier Modifier = CsParamModifier.Default,
     bool IsScoped = false
@@ -15,6 +15,6 @@ record class CsMethodParam(
 {
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
     {
-        return Type?.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor);
+        return Type.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor);
     }
 }

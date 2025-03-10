@@ -26,7 +26,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsStruct.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclarationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeParameterDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeRefWithNullability.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsUserDefinableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\Internals\INullableRefarences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsEnumUnderlyingType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\Internals\IConstructionFullCompleteFactor.cs" />

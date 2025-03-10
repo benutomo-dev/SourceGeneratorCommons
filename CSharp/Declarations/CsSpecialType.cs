@@ -20,4 +20,5 @@ internal enum CsSpecialType
     String,
     Guid,
     Decimal,
+    Nullable,
 }
