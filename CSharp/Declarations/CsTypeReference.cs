@@ -199,6 +199,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
             {
                 switch (typeDefinition.Name)
                 {
+                    case "Boolean": return "bool";
                     case "SByte":   return "sbyte";
                     case "Int16":   return "short";
                     case "Int32":   return "int";
@@ -211,6 +212,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
                     case "Double":  return "double";
                     case "Decimal": return "decimal";
                     case "Char":    return "char";
+                    case "String":  return "string";
                     case "Object":  return "object";
                     case "Void":    return "void";
                     default:
