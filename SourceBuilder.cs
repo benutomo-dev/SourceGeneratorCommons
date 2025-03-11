@@ -159,11 +159,16 @@ internal class SourceBuilder : IDisposable
         InternalAppend(text);
     }
 
-
     public void AppendLine(ReadOnlySpan<char> text)
     {
         InternalAppend(text);
         AppendLine();
+    }
+
+    public void AppendLineWithFirstIndent(ReadOnlySpan<char> text)
+    {
+        PutIndentSpace();
+        AppendLine(text);
     }
 
     public void AppendLine()
