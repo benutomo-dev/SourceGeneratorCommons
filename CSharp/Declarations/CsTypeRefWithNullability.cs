@@ -49,7 +49,7 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
         {
             if (IsNullable)
             {
-                DebugSGen.Assert(Type.TypeDefinition.IsReferenceType);
+                DebugSGen.Assert(!Type.TypeDefinition.IsValueType);
                 return ((INullableRefarences)Type).NullablePatternGlobalReference;
             }
 
@@ -80,7 +80,7 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
     {
         Type = type;
 
-        if (isNullableIfRefereceType && type.TypeDefinition.IsReferenceType)
+        if (isNullableIfRefereceType && !type.TypeDefinition.IsValueType)
             IsNullable = true;
     }
 

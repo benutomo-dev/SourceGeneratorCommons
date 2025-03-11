@@ -86,7 +86,7 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        bool isNullableIfRefereceType = typeSymbol.IsReferenceType && typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
+        bool isNullableIfRefereceType = !typeSymbol.IsValueType && typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
 
         if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReference))
             return new (cachedTypeReference, isNullableIfRefereceType);
