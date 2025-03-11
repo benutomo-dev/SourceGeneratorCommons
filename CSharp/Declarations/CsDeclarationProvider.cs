@@ -542,27 +542,24 @@ internal class CsDeclarationProvider
         return new CsMethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
     }
 
-    private ITypeContainer BuildContainer(ITypeSymbol typeSymbol, int nest)
+    private ITypeContainer? BuildContainer(ITypeSymbol typeSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        ITypeContainer? container;
+        if (typeSymbol.ContainingType is not null)
+            return GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, nest);
 
-        if (typeSymbol.ContainingType is null)
+        if (typeSymbol.ContainingNamespace is not null)
         {
             var namespaceBuilder = new StringBuilder();
             SymbolExtensions.AppendFullNamespace(namespaceBuilder, typeSymbol.ContainingNamespace);
 
-            container = new CsNameSpace(namespaceBuilder.ToString());
-        }
-        else
-        {
-            container = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, nest);
+            return new CsNameSpace(namespaceBuilder.ToString());
         }
 
-        return container;
+        return null;
     }
 
     private EquatableArray<CsGenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol, int nest)
