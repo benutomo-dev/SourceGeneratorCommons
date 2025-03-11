@@ -403,7 +403,7 @@ internal class CsDeclarationProvider
 
                     var methodParams = namedTypeSymbol.DelegateInvokeMethod.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
 
-                    var genericTypeParams = namedTypeSymbol.DelegateInvokeMethod.TypeParameters.Select(v => BuildGenericTypeParam(v, nest)).ToImmutableArray();
+                    var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, nest);
 
                     completeDelegateDeclaration(container, returnType, methodParams, genericTypeParams);
                 }
