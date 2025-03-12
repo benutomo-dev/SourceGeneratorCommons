@@ -327,7 +327,7 @@ internal class SourceBuilder : IDisposable
 
                         for (int i = 0; i < inheritTypes.Count; i++)
                         {
-                            self.Append(inheritTypes[i].ToString());
+                            self.Append(inheritTypes[i].GlobalReference);
 
                             if (i != inheritTypes.Count - 1)
                                 self.Append(", ");
@@ -539,11 +539,11 @@ internal class SourceBuilder : IDisposable
                     _ => null,
                 });
 
-                appendConstraint(this, ref existsLeadingConstraint, constraints.BaseType?.ToString());
+                appendConstraint(this, ref existsLeadingConstraint, constraints.BaseType?.GlobalReference);
 
                 foreach (var interfaceConstraint in constraints.Interfaces.Values)
                 {
-                    appendConstraint(this, ref existsLeadingConstraint, interfaceConstraint.ToString());
+                    appendConstraint(this, ref existsLeadingConstraint, interfaceConstraint.GlobalReference);
                 }
 
                 AppendLine("");
