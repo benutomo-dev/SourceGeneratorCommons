@@ -420,6 +420,18 @@ internal class CsDeclarationProvider
             }
         }
 
+        if (typeSymbol.TypeKind == TypeKind.Error)
+        {
+            var errorType = _typeDeclarationDictionary.GetOrAdd(
+                typeSymbol,
+                static typeSymbol => new CsErrorType(typeSymbol.Name), // エラータイプの名前のintern化は常に不要
+                out isAdded);
+
+            DebugSGen.Assert(((ILazyConstructionRoot)errorType).ConstructionFullCompleted.IsCompleted);
+
+            return errorType;
+        }
+
         throw new NotSupportedException();
     }
 

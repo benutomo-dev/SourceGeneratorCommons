@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsSpecialType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsStruct.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclarationExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsErrorType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeParameterDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeRefWithNullability.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsUserDefinableTypeDeclaration.cs" />
