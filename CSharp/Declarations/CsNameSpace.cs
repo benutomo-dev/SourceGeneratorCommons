@@ -13,14 +13,21 @@ class CsNameSpace : ITypeContainer, IEquatable<CsNameSpace>
 
     public bool IsSystem => Name == "System";
 
-    public CsNameSpace(string name)
-    {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-    }
+    public bool IsDefinedUnderSystemNameSpace { get; private set; }
 
     public Task ConstructionFullCompleted => Task.CompletedTask;
 
     public Task SelfConstructionCompleted => Task.CompletedTask;
+
+
+    public CsNameSpace(string name)
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+
+        IsDefinedUnderSystemNameSpace = IsSystem || name.StartsWith("System.", StringComparison.Ordinal);
+    }
+
+    public override string ToString() => $"{GetType().Name}{{{Name}}}";
 
     public override bool Equals(object? obj)
     {

@@ -8,7 +8,9 @@ using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.Collections.Special;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Xml.Linq;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
@@ -110,7 +112,9 @@ internal class CsDeclarationProvider
 
         var methodParams = methodSymbol.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
 
-        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v, nest)).ToImmutableArray();
+        var isSystemSymbolParameter = IsSystemSymbol(methodSymbol.ContainingType);
+
+        var genericTypeParams = methodSymbol.TypeParameters.Select(v => BuildGenericTypeParam(v, isSystemSymbolParameter, nest)).ToImmutableArray();
 
         bool isReadOnly;
         CsAccessibility accessibility;
@@ -177,8 +181,8 @@ internal class CsDeclarationProvider
         if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
         {
             var typeParameterDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                typeSymbol,
-                static typeSymbol => new CsTypeParameterDeclaration(typeSymbol.Name),
+                typeParameterSymbol,
+                static typeParameterSymbol => new CsTypeParameterDeclaration(GetNameWithInternIfSystem(typeParameterSymbol)),
                 out isAdded);
 
             DebugSGen.Assert(((ILazyConstructionRoot)typeParameterDeclaration).ConstructionFullCompleted.IsCompleted);
@@ -193,7 +197,7 @@ internal class CsDeclarationProvider
             var arrayDeclaration = _typeDeclarationDictionary.GetOrAdd(arrayTypeSymbol, ref completeArrayDeclaration,
                 static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithNullability>? completeArrayDeclaration) =>
                 {
-                    return new CsArray(arrayTypeSymbol.Name, arrayTypeSymbol.Rank, out completeArrayDeclaration);
+                    return new CsArray(GetNameWithInternIfSystem(arrayTypeSymbol), arrayTypeSymbol.Rank, out completeArrayDeclaration);
                 },
                 out isAdded);
 
@@ -237,7 +241,7 @@ internal class CsDeclarationProvider
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
-                        return new CsEnum(namedTypeSymbol.Name, accessibility, underlyingType, out completeEnumDeclaration);
+                        return new CsEnum(GetNameWithInternIfSystem(namedTypeSymbol), accessibility, underlyingType, out completeEnumDeclaration);
                     },
                     out isAdded);
 
@@ -273,7 +277,7 @@ internal class CsDeclarationProvider
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsClass(
-                            namedTypeSymbol.Name,
+                            GetNameWithInternIfSystem(namedTypeSymbol),
                             accessibility,
                             classModifier,
                             out completeClassDeclaration);
@@ -313,7 +317,7 @@ internal class CsDeclarationProvider
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsInterface(
-                            namedTypeSymbol.Name,
+                            GetNameWithInternIfSystem(namedTypeSymbol),
                             accessibility,
                             out completeInterfaceDeclaration);
                     },
@@ -347,7 +351,7 @@ internal class CsDeclarationProvider
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsStruct(
-                            namedTypeSymbol.Name,
+                            GetNameWithInternIfSystem(namedTypeSymbol),
                             accessibility,
                             namedTypeSymbol.IsReadOnly,
                             namedTypeSymbol.IsRefLikeType,
@@ -381,12 +385,14 @@ internal class CsDeclarationProvider
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
+                        DebugSGen.AssertIsNotNull(namedTypeSymbol.DelegateInvokeMethod);
+
                         var returnModifier = namedTypeSymbol.DelegateInvokeMethod.ToCsReturnModifier();
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsDelegate(
-                            namedTypeSymbol.Name,
+                            GetNameWithInternIfSystem(namedTypeSymbol),
                             accessibility,
                             returnModifier,
                             out completeInterfaceDeclaration);
@@ -398,6 +404,8 @@ internal class CsDeclarationProvider
                     DebugSGen.AssertIsNotNull(completeDelegateDeclaration);
 
                     var container = BuildContainer(namedTypeSymbol, nest);
+
+                    DebugSGen.AssertIsNotNull(namedTypeSymbol.DelegateInvokeMethod);
 
                     var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.DelegateInvokeMethod.ReturnType, nest);
 
@@ -465,7 +473,7 @@ internal class CsDeclarationProvider
         }
     }
 
-    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, int nest)
+    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, bool isSystemSymbolParameter, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -508,7 +516,7 @@ internal class CsDeclarationProvider
 
         var genericTypeParam = new CsGenericTypeParam
         {
-            Name = typeParameterSymbol.Name,
+            Name  = GetInterned(typeParameterSymbol.Name, withIntern: isSystemSymbolParameter),
             Where = constraints,
         };
 
@@ -574,11 +582,13 @@ internal class CsDeclarationProvider
         {
             var originalDefinitionTypeSymbol = namedTypeSymbol.OriginalDefinition;
 
+            var isSystemSymbolParameter = IsSystemSymbol(namedTypeSymbol);
+
             var typeParamsBuilder = ImmutableArray.CreateBuilder<CsGenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
-                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i], nest);
+                var genericTypeParam = BuildGenericTypeParam(namedTypeSymbol.TypeParameters[i], isSystemSymbolParameter, nest);
 
                 typeParamsBuilder.Add(genericTypeParam);
             }
@@ -601,5 +611,30 @@ internal class CsDeclarationProvider
 
         var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, nest).Type).ToImmutableArray().ToEquatableArray();
         return interfaces;
+    }
+
+
+    private static string GetInterned(string value, bool withIntern)
+    {
+        var internedValue = withIntern ? string.Intern(value) : string.IsInterned(value) ?? value;
+        return internedValue;
+    }
+
+    private static string GetNameWithInternIfSystem(ISymbol symbol)
+    {
+        bool isSystemType = IsSystemSymbol(symbol);
+        var symbolName = GetInterned(symbol.Name, withIntern: isSystemType);
+        return symbolName;
+    }
+
+    private static bool IsSystemSymbol(ISymbol symbol)
+    {
+        if (symbol is { Kind: SymbolKind.Namespace, Name: "System", ContainingNamespace: { IsGlobalNamespace: true } })
+            return true;
+
+        if (symbol.ContainingNamespace is not null)
+            return IsSystemSymbol(symbol.ContainingNamespace);
+
+        return false;
     }
 }

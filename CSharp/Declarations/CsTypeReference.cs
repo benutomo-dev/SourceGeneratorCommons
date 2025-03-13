@@ -3,6 +3,7 @@
 #endif
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
@@ -43,6 +44,71 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
     private string? _internalReference;
     private string? _nullableGlobalReference;
     private string? _nullableInternalReference;
+
+    private ImmutableArray<string> EqualsSignature
+    {
+        get
+        {
+            if (!_equalsSignature.IsDefault)
+                return _equalsSignature;
+
+            var count = 0;
+            countLength(TypeDefinition, TypeArgs.AsSpan(), ref count, out _);
+
+            var builder = ImmutableArray.CreateBuilder<string>(count);
+
+            fill(builder, TypeDefinition, TypeArgs.AsSpan(), out _);
+
+            return builder.MoveToImmutable();
+
+            static void countLength(CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs, ref int count, out CsNameSpace? nameSpace)
+            {
+                count += 1;
+
+                nameSpace = null;
+
+                if (type.Container is CsTypeDeclaration containerType)
+                    countLength(containerType, typeArgs.Length > 0 ? typeArgs.Slice(1) : [], ref count, out nameSpace);
+                else if (type.Container is CsNameSpace)
+                    nameSpace = (CsNameSpace)type.Container;
+
+                if (typeArgs.Length > 0 && typeArgs[0].Length > 0)
+                {
+                    count += 2;
+                    foreach (var typeArg in typeArgs[0].AsSpan())
+                        countLength(typeArg.Type.TypeDefinition, typeArg.Type.TypeArgs.AsSpan(), ref count, out _);
+                }
+
+                if (nameSpace is not null)
+                    count++;
+            }
+
+            static void fill(ImmutableArray<string>.Builder builder, CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs, out CsNameSpace? nameSpace)
+            {
+                nameSpace = null;
+
+                if (type.Container is CsTypeDeclaration containerType)
+                    fill(builder, containerType, typeArgs.Length > 0 ? typeArgs.Slice(1) : [], out nameSpace);
+                else if (type.Container is CsNameSpace)
+                    nameSpace = (CsNameSpace)type.Container;
+                
+                builder.Add(type.Name);
+
+                if (typeArgs.Length > 0 && typeArgs[0].Length > 0)
+                {
+                    builder.Add("<");
+                    foreach (var typeArg in typeArgs[0].AsSpan())
+                        fill(builder, typeArg.Type.TypeDefinition, typeArg.Type.TypeArgs.AsSpan(), out _);
+                    builder.Add(">");
+                }
+
+                if (nameSpace is not null)
+                    builder.Add(nameSpace.Name);
+            }
+        }
+    }
+
+    private ImmutableArray<string> _equalsSignature;
 
     public CsTypeReference(CsTypeDeclaration typeDefinition)
         : this(typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithNullability>>.Empty)
@@ -104,8 +170,9 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         // CsTypeReferenceは`class A : IEquatable<A>`のような自己参照的な関係にも関わるので
         // 普通にメンバオブジェクトのEqualsを呼び出すと上記のような関係性に含まれる
         // 循環参照でスタックオーバーフローが発生する。
-        // 完全な正確性は無いが安全な手法として一番詳細な文字列化結果で同一性を判定する。
-        if (GlobalReference != other.GlobalReference)
+        // 安全かつ高速な手法として一番詳細な型名(※)の連結で同一性を判定する。
+        // ※ Systemの型は全てIntern化されるので参照比較のみで判別可能
+        if (!EqualsSignature.AsSpan().SequenceEqual(other.EqualsSignature.AsSpan()))
             return false;
 
         return true;
@@ -118,8 +185,10 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         // CsTypeReferenceは`class A : IEquatable<A>`のような自己参照的な関係にも関わるので
         // 普通にメンバオブジェクトのGetHashCodeを呼び出すと上記のような関係性に含まれる
         // 循環参照でスタックオーバーフローが発生する。
-        // 完全な正確性は無いが安全な手法として一番詳細な文字列化結果で同一性を判定する。
-        hashCode.Add(GlobalReference);
+        // 安全かつ高速な手法として一番詳細な型名(※)の連結で同一性を判定する。
+        // ※ Systemの型は全てIntern化されるので参照比較のみで判別可能
+        foreach (var value in EqualsSignature.AsSpan())
+            hashCode.Add(value);
  
         return hashCode.ToHashCode();
     }

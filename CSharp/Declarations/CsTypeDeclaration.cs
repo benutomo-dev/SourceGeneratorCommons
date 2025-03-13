@@ -76,6 +76,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         }
     }
 
+    public bool IsDefinedUnderSystemNameSpace => Container?.IsDefinedUnderSystemNameSpace ?? false;
+
     private string? _nameWithGenericArgs;
 
     private string? _fullName;
@@ -226,6 +228,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             }
         }
     }
+
+    public override string ToString() => $"{GetType().Name}{{{NameWithGenericParams}}}";
 
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsTypeDeclaration other && Equals(other);
