@@ -2,6 +2,7 @@
 #pragma warning disable
 #endif
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations;
 using System.Buffers;
@@ -363,7 +364,7 @@ internal class SourceBuilder : IDisposable
         }
     }
 
-    public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethod methodDefinitionInfo, string? methodDeclarationLineTail = null)
+    public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethod methodDefinitionInfo, bool isPartial = true, string? methodDeclarationLineTail = null)
     {
         PutIndentSpace();
         Append(methodDefinitionInfo.Accessibility switch
@@ -390,7 +391,8 @@ internal class SourceBuilder : IDisposable
             CsMethodModifier.Abstract       => "abstract ",
             _ => "",
         });
-        Append("partial ");
+        if (isPartial)
+            Append("partial ");
         Append(methodDefinitionInfo.ReturnModifier switch
         {
             CsReturnModifier.RefReadonly=> "ref readonly ",
@@ -430,7 +432,19 @@ internal class SourceBuilder : IDisposable
         {
             for (int i = 0; i < methodDefinitionInfo.Params.Length; i++)
             {
+                if (i == 0 && methodDefinitionInfo.IsExtensionMethod)
+                    Append("this ");
+
                 var param = methodDefinitionInfo.Params[i];
+
+                if (!param.Attributes.IsDefaultOrEmpty)
+                {
+                    foreach (var attribute in param.Attributes.Values)
+                    {
+                        Append(attribute.SourceText);
+                    }
+                    Append(" ");
+                }
 
                 if (param.IsScoped)
                     Append("scoped ");
@@ -444,7 +458,17 @@ internal class SourceBuilder : IDisposable
                     _ => "",
                 });
 
+                Append(param.Type.GlobalReference);
+
+                Append(" ");
+
                 Append(param.Name);
+
+                if (param is CsMethodParamWithDefaultValue paramWithDefaultValue)
+                {
+                    Append(" = ");
+                    Append(SymbolDisplay.FormatPrimitive(paramWithDefaultValue.DefaultValue, quoteStrings: true, useHexadecimalNumbers: false));
+                }
 
                 if (i < methodDefinitionInfo.Params.Length - 1)
                 {
@@ -507,12 +531,12 @@ internal class SourceBuilder : IDisposable
         if (genericTypeParams.IsDefaultOrEmpty)
             return;
 
-        if (genericTypeParams.Values.Any(v => v.Where.HasValue))
+        if (!genericTypeParams.Values.Any(v => v.Where.HasValue && !v.Where.Value.IsAny))
             return;
 
         using (BeginIndent())
         {
-            foreach (var genericTypeParam in genericTypeParams.Values.Where(v => v.Where.HasValue))
+            foreach (var genericTypeParam in genericTypeParams.Values.Where(v => v.Where.HasValue && !v.Where.Value.IsAny))
             {
                 PutIndentSpace();
                 Append("where ");

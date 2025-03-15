@@ -559,7 +559,15 @@ internal class CsDeclarationProvider
         isScoped = parameterSymbol.ScopedKind == ScopedKind.ScopedRef;
 #endif
 
-        return new CsMethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
+        if (parameterSymbol.HasExplicitDefaultValue)
+        {
+            DebugSGen.Assert(isScoped == false);
+            return new CsMethodParamWithDefaultValue(paramType, parameterSymbol.Name, parameterSymbol.ExplicitDefaultValue, paramModifier);
+        }
+        else
+        {
+            return new CsMethodParam(paramType, parameterSymbol.Name, paramModifier, isScoped);
+        }
     }
 
     private ITypeContainer? BuildContainer(ITypeSymbol typeSymbol, int nest)

@@ -22,6 +22,8 @@ record class CsMethod(
 {
     public bool IsVoidMethod => ReturnType.ToString() == "void";
 
+    public bool IsExtensionMethod => this is CsExtensionMethod;
+
     public string Cref => _cref ??= BuildCref();
 
 
