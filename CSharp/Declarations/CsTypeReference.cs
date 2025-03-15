@@ -168,71 +168,47 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
     public CsTypeReference WithTypeDefinition(CsTypeDeclaration typeDefinition)
     {
-        validate(typeDefinition, TypeArgs.AsSpan());
+        ValidateRecursiveTypeArgsArity(typeDefinition, TypeArgs.AsSpan());
 
         return new CsTypeReference(typeDefinition, TypeArgs);
 
-        static void validate(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs)
-        {
-            if (typeDeclaration.IsGenericType)
-            {
-                if (typeArgs.Length == 0)
-                    throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
-
-                if (typeDeclaration.GenericTypeParams.Length != typeArgs[0].Length)
-                    throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
-            }
-            else
-            {
-                if (typeArgs.Length != 0 && !typeArgs[0].IsDefaultOrEmpty)
-                    throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
-            }
-
-
-            if (typeDeclaration.Container is CsTypeDeclaration containerTypeDeclaration)
-            {
-                if (typeArgs.Length <= 1)
-                    throw new ArgumentException($"{containerTypeDeclaration.Name}に対応する型引数が含まれていません。", nameof(typeArgs));
-
-                validate(containerTypeDeclaration, typeArgs.Slice(1));
-            }
-            else
-            {
-                if (typeArgs.Length > 1)
-                    throw new ArgumentException($"対応する型のない型引数が含まれています。", nameof(typeArgs));
-            }
-        }
     }
 
     public CsTypeReference WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
     {
-        validate(TypeDefinition, typeArgs.AsSpan());
+        ValidateRecursiveTypeArgsArity(TypeDefinition, typeArgs.AsSpan());
 
         return new CsTypeReference(TypeDefinition, typeArgs);
+    }
 
-        static void validate(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    static void ValidateRecursiveTypeArgsArity(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    {
+        if (typeDeclaration.IsGenericType)
         {
-            if (!typeDeclaration.IsGenericType)
-                if (typeArgs[0].Length != 0)
-                    throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
-
-            var genericTypeDeclaration = (CsGenericDefinableTypeDeclaration)typeDeclaration;
-
-            if (genericTypeDeclaration.GenericTypeParams.Length != typeArgs[0].Length)
+            if (typeArgs.Length == 0)
                 throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
 
-            if (typeDeclaration.Container is CsTypeDeclaration containerTypeDeclaration)
-            {
-                if (typeArgs.Length <= 1)
-                    throw new ArgumentException($"{containerTypeDeclaration.Name}に対応する型引数が含まれていません。", nameof(typeArgs));
+            if (typeDeclaration.GenericTypeParams.Length != typeArgs[0].Length)
+                throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
+        }
+        else
+        {
+            if (typeArgs.Length != 0 && !typeArgs[0].IsDefaultOrEmpty)
+                throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
+        }
 
-                validate(containerTypeDeclaration, typeArgs.Slice(1));
-            }
-            else
-            {
-                if (typeArgs.Length != 1)
-                    throw new ArgumentException($"対応する型のない型引数が含まれています。", nameof(typeArgs));
-            }
+
+        if (typeDeclaration.Container is CsTypeDeclaration containerTypeDeclaration)
+        {
+            if (typeArgs.Length <= 1)
+                throw new ArgumentException($"{containerTypeDeclaration.Name}に対応する型引数が含まれていません。", nameof(typeArgs));
+
+            ValidateRecursiveTypeArgsArity(containerTypeDeclaration, typeArgs.Slice(1));
+        }
+        else
+        {
+            if (typeArgs.Length > 1)
+                throw new ArgumentException($"対応する型のない型引数が含まれています。", nameof(typeArgs));
         }
     }
 
