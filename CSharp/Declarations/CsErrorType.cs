@@ -1,6 +1,8 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
+
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsErrorType : CsTypeDeclaration, IEquatable<CsErrorType>
@@ -11,9 +13,13 @@ sealed class CsErrorType : CsTypeDeclaration, IEquatable<CsErrorType>
 
     public sealed override bool IsGenericType => false;
 
+    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+
     public CsErrorType(string name) : base(container: null, name)
     {
     }
+
+    protected override CsTypeDeclaration Clone() => new CsErrorType(Name);
 
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsErrorType other && Equals(other);

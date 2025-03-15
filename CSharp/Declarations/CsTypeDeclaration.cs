@@ -1,6 +1,7 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -32,6 +33,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public abstract bool IsGenericType { get; }
 
+    public abstract EquatableArray<CsGenericTypeParam> GenericTypeParams { get; }
+
     public virtual bool CanInherit => false;
 
     public string Name { get; }
@@ -58,7 +61,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         }
     }
 
-    public string FullName
+    public string FullNameWithNameSpaceAlias
     {
         get
         {
@@ -70,7 +73,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             if (Container is null)
                 _fullName = NameWithGenericParams;
             else
-                _fullName = $"{Container.FullName}.{NameWithGenericParams}";
+                _fullName = $"{Container.FullNameWithNameSpaceAlias}.{NameWithGenericParams}";
 
             return _fullName;
         }
@@ -171,6 +174,8 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             }
         };
     }
+
+    protected abstract CsTypeDeclaration Clone();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ThrowIfInitializeNotFullCompleted()
@@ -274,7 +279,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
     private string GetDebuggerDisplay()
     {
         if (ConstructionFullCompleted.IsCompleted)
-            return FullName;
+            return FullNameWithNameSpaceAlias;
         else
             return $"{Name} (Now constructing...)";
     }

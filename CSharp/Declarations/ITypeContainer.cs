@@ -9,7 +9,7 @@ interface ITypeContainer : ILazyConstructionRoot, IConstructionFullCompleteFacto
 {
     string Name { get; }
 
-    string FullName { get; }
+    string FullNameWithNameSpaceAlias { get; }
 
     bool IsDefinedUnderSystemNameSpace { get; }
 }

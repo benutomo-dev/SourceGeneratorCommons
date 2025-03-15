@@ -54,6 +54,15 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
         };
     }
 
+    protected override CsTypeDeclaration Clone() => new CsDelegate(Container, Name, ReturnType, ReturnModifier, MethodParams, GenericTypeParams, Accessibility);
+
+    public CsDelegate WithAccessibility(CsAccessibility accessibility)
+    {
+        var cloned = ((CsDelegate)Clone());
+        cloned.Accessibility = accessibility;
+        return cloned;
+    }
+
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsDelegate other && Equals(other);
 

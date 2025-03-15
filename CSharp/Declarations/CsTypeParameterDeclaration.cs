@@ -1,6 +1,8 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
+
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsTypeParameterDeclaration : CsTypeDeclaration, IEquatable<CsTypeParameterDeclaration>
@@ -11,9 +13,17 @@ sealed class CsTypeParameterDeclaration : CsTypeDeclaration, IEquatable<CsTypePa
 
     public sealed override bool IsGenericType => false;
 
+    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+
     public CsTypeParameterDeclaration(string name) : base(container: null, name)
     {
     }
+
+    private CsTypeParameterDeclaration(ITypeContainer? container, string name) : base(container: null, name)
+    {
+    }
+
+    protected override CsTypeDeclaration Clone() => new CsTypeParameterDeclaration(Container, Name);
 
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsTypeParameterDeclaration other && Equals(other);

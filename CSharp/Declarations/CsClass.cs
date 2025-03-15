@@ -40,6 +40,15 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
         };
     }
 
+    protected override CsTypeDeclaration Clone() => new CsClass(Container, Name, GenericTypeParams, BaseType, Interfaces, Accessibility, ClassModifier);
+
+    public CsClass WithAccessibility(CsAccessibility accessibility)
+    {
+        var cloned = ((CsClass)Clone());
+        cloned.Accessibility = accessibility;
+        return cloned;
+    }
+
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsClass other && Equals(other);
 

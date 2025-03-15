@@ -35,6 +35,31 @@ sealed class CsStruct : CsInterfaceInplementableTypeDeclaration, IEquatable<CsSt
         };
     }
 
+    protected override CsTypeDeclaration Clone() => new CsStruct(Container, Name, GenericTypeParams, Interfaces, Accessibility, IsReadOnly, IsRef);
+
+    public CsStruct WithAccessibility(CsAccessibility accessibility)
+    {
+        var cloned = ((CsStruct)Clone());
+        cloned.Accessibility = accessibility;
+        return cloned;
+    }
+
+    public CsStruct WithIsReadOnly(bool isReadOnly)
+    {
+        if (IsReadOnly == isReadOnly)
+            return this;
+
+        return new CsStruct(Container, Name, GenericTypeParams, Interfaces, Accessibility, isReadOnly, IsRef);
+    }
+
+    public CsStruct WithIsRef(bool isRef)
+    {
+        if (IsRef == isRef)
+            return this;
+
+        return new CsStruct(Container, Name, GenericTypeParams, Interfaces, Accessibility, IsReadOnly, isRef);
+    }
+
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsStruct other && Equals(other);
 

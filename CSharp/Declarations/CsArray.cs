@@ -1,6 +1,8 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
+
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
@@ -8,6 +10,8 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
     public sealed override bool IsValueType => false;
 
     public sealed override bool IsGenericType => false;
+
+    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
 
     public CsTypeRefWithNullability ElementType { get; private set; }
 
@@ -37,6 +41,8 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
                 );
         };
     }
+
+    protected override CsTypeDeclaration Clone() => new CsArray(Container, Name, ElementType, Rank);
 
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsArray other && Equals(other);

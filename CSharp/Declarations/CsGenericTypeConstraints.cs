@@ -20,6 +20,12 @@ internal record struct CsGenericTypeConstraints(
 #endif
 ) : ILazyConstructionOwner
 {
+    public bool IsAny => true
+        && TypeCategory == CsGenericConstraintTypeCategory.Any
+        && !HaveDefaultConstructor
+        && BaseType is null
+        && Interfaces.IsDefaultOrEmpty;
+
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
     {
         IEnumerable<IConstructionFullCompleteFactor>? factors = null;

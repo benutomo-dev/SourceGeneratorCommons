@@ -7,7 +7,7 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 abstract class CsUserDefinableTypeDeclaration : CsTypeDeclaration, IEquatable<CsUserDefinableTypeDeclaration>
 {
-    public CsAccessibility Accessibility { get; }
+    public CsAccessibility Accessibility { get; protected set; }
 
     public CsUserDefinableTypeDeclaration(ITypeContainer? container, string name, CsAccessibility accessibility = CsAccessibility.Default)
         :base(container, name)

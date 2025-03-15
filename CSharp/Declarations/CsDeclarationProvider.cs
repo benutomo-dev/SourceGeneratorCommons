@@ -12,11 +12,15 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
 
+using CodeAnalysysSpecialType = Microsoft.CodeAnalysis.SpecialType;
+
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 internal class CsDeclarationProvider
 {
     public Compilation Compilation { get; }
+
+    public ref SpecialTypes SpecialType => ref _specialType;
 
     private const int MaxNestCount = 100;
 
@@ -25,6 +29,51 @@ internal class CsDeclarationProvider
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
 
     private HashTable<ITypeSymbol, CsTypeReference> _typeReferenceDictionary;
+
+    public SpecialTypes _specialType;
+
+
+    public struct SpecialTypes
+    {
+        public CsTypeReference Object => _object ?? _provider.GetTypeReferenceByMetadataName("System.Object");
+        public CsTypeReference String => _string ?? _provider.GetTypeReferenceByMetadataName("System.String");
+        public CsTypeReference Char => _char ?? _provider.GetTypeReferenceByMetadataName("System.Char");
+        public CsTypeReference Byte => _byte ?? _provider.GetTypeReferenceByMetadataName("System.Byte");
+        public CsTypeReference SByte => _sByte ?? _provider.GetTypeReferenceByMetadataName("System.SByte");
+        public CsTypeReference Short => _int16 ?? _provider.GetTypeReferenceByMetadataName("System.Int16");
+        public CsTypeReference Int => _int32 ?? _provider.GetTypeReferenceByMetadataName("System.Int32");
+        public CsTypeReference Long => _int64 ?? _provider.GetTypeReferenceByMetadataName("System.Int64");
+        public CsTypeReference UShort => _uInt16 ?? _provider.GetTypeReferenceByMetadataName("System.UInt16");
+        public CsTypeReference UInt => _uInt32 ?? _provider.GetTypeReferenceByMetadataName("System.UInt32");
+        public CsTypeReference ULong => _uInt64 ?? _provider.GetTypeReferenceByMetadataName("System.UInt64");
+        public CsTypeReference Float => _single ?? _provider.GetTypeReferenceByMetadataName("System.Single");
+        public CsTypeReference Double => _double ?? _provider.GetTypeReferenceByMetadataName("System.Double");
+        public CsTypeReference Decimal => _decimal ?? _provider.GetTypeReferenceByMetadataName("System.Decimal");
+        public CsTypeReference Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid");
+        public CsTypeReference Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type");
+        public CsTypeReference Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute");
+
+        private CsDeclarationProvider _provider;
+        private CsTypeReference _type;
+        private CsTypeReference _guid;
+        private CsTypeReference _decimal;
+        private CsTypeReference _double;
+        private CsTypeReference _single;
+        private CsTypeReference _uInt64;
+        private CsTypeReference _uInt32;
+        private CsTypeReference _uInt16;
+        private CsTypeReference _int64;
+        private CsTypeReference _int32;
+        private CsTypeReference _int16;
+        private CsTypeReference _sByte;
+        private CsTypeReference _byte;
+        private CsTypeReference _char;
+        private CsTypeReference _string;
+        private CsTypeReference _object;
+        private CsTypeReference? _attribute;
+
+        public SpecialTypes(CsDeclarationProvider provider) => _provider = provider;
+    }
 
     public CsDeclarationProvider(Compilation compilation, CancellationToken rootCancellationToken)
     {
@@ -37,6 +86,8 @@ internal class CsDeclarationProvider
         _typeDeclarationDictionary = new HashTable<ITypeSymbol, CsTypeDeclaration>(lockObj, SymbolEqualityComparer.Default);
 
         _typeReferenceDictionary = new HashTable<ITypeSymbol, CsTypeReference>(lockObj, SymbolEqualityComparer.IncludeNullability);
+
+        _specialType = new SpecialTypes(this);
     }
 
     internal CsTypeDeclaration GetTypeDeclaration(ITypeSymbol typeSymbol)
@@ -61,6 +112,11 @@ internal class CsDeclarationProvider
         ((ILazyConstructionRoot)typeReference.Type).ConstructionFullCompleted.Wait(_rootCancellationToken);
 
         return typeReference;
+    }
+
+    internal CsTypeReference GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
+    {
+        return GetTypeReference(Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName)).Type;
     }
 
     internal CsMethod GetMethodDeclaration(IMethodSymbol methodSymbol)
@@ -228,14 +284,14 @@ internal class CsDeclarationProvider
 
                         var underlyingType = namedTypeSymbol.EnumUnderlyingType switch
                         {
-                            { SpecialType: SpecialType.System_Byte } => CsEnumUnderlyingType.Byte,
-                            { SpecialType: SpecialType.System_Int16 } => CsEnumUnderlyingType.Int16,
-                            { SpecialType: SpecialType.System_Int32 } => CsEnumUnderlyingType.Int32,
-                            { SpecialType: SpecialType.System_Int64 } => CsEnumUnderlyingType.Int64,
-                            { SpecialType: SpecialType.System_SByte } => CsEnumUnderlyingType.SByte,
-                            { SpecialType: SpecialType.System_UInt16 } => CsEnumUnderlyingType.UInt16,
-                            { SpecialType: SpecialType.System_UInt32 } => CsEnumUnderlyingType.UInt32,
-                            { SpecialType: SpecialType.System_UInt64 } => CsEnumUnderlyingType.UInt64,
+                            { SpecialType: CodeAnalysysSpecialType.System_Byte } => CsEnumUnderlyingType.Byte,
+                            { SpecialType: CodeAnalysysSpecialType.System_Int16 } => CsEnumUnderlyingType.Int16,
+                            { SpecialType: CodeAnalysysSpecialType.System_Int32 } => CsEnumUnderlyingType.Int32,
+                            { SpecialType: CodeAnalysysSpecialType.System_Int64 } => CsEnumUnderlyingType.Int64,
+                            { SpecialType: CodeAnalysysSpecialType.System_SByte } => CsEnumUnderlyingType.SByte,
+                            { SpecialType: CodeAnalysysSpecialType.System_UInt16 } => CsEnumUnderlyingType.UInt16,
+                            { SpecialType: CodeAnalysysSpecialType.System_UInt32 } => CsEnumUnderlyingType.UInt32,
+                            { SpecialType: CodeAnalysysSpecialType.System_UInt64 } => CsEnumUnderlyingType.UInt64,
                             _ => throw new NotSupportedException(),
                         };
 
@@ -294,7 +350,7 @@ internal class CsDeclarationProvider
 
                     var interfaces = BuildInterfaces(namedTypeSymbol, nest);
 
-                    if (!(namedTypeSymbol is { BaseType: { SpecialType: not SpecialType.System_Object } baseTypeSymbol }))
+                    if (!(namedTypeSymbol is { BaseType: { SpecialType: not CodeAnalysysSpecialType.System_Object } baseTypeSymbol }))
                         baseTypeSymbol = null;
 
                     var baseTypeReference = baseTypeSymbol is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseTypeSymbol, nest).Type;

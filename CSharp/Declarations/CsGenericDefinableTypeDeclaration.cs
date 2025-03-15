@@ -8,15 +8,16 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsGenericDefinableTypeDeclaration>
 {
-    public sealed override bool IsGenericType => !GenericTypeParams.IsDefaultOrEmpty;
+    public sealed override bool IsGenericType => GenericTypeParams.Length > 0;
 
-    public EquatableArray<CsGenericTypeParam> GenericTypeParams { get; private set; }
+    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => _genericTypeParams;
 
+    private EquatableArray<CsGenericTypeParam> _genericTypeParams;
 
     public CsGenericDefinableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, accessibility)
     {
-        GenericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsGenericTypeParam>.Empty : genericTypeParams;
+        _genericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsGenericTypeParam>.Empty : genericTypeParams;
     }
 
     public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
@@ -27,7 +28,7 @@ abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaratio
             if (SelfConstructionCompleted.IsCompleted)
                 throw new InvalidOperationException();
 
-            GenericTypeParams = genericTypeParams;
+            _genericTypeParams = genericTypeParams;
 
             foreach (var genericTypeParam in genericTypeParams.Values)
             {

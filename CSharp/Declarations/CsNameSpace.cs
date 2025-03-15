@@ -7,7 +7,7 @@ class CsNameSpace : ITypeContainer, IEquatable<CsNameSpace>
 {
     public string Name { get; }
 
-    public string FullName => $"global::{Name}";
+    public string FullNameWithNameSpaceAlias => $"global::{Name}";
 
     public bool IsGlobal => Name == "";
 

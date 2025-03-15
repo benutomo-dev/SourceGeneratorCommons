@@ -1,6 +1,8 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
+
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
@@ -8,6 +10,8 @@ sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
     public sealed override bool IsValueType => true;
 
     public sealed override bool IsGenericType => false;
+
+    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
 
     public CsEnumUnderlyingType UnderlyingType { get; }
 
@@ -26,6 +30,15 @@ sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
         {
             baseComplete(typeContainer, null);
         };
+    }
+
+    protected override CsTypeDeclaration Clone() => new CsEnum(Container, Name, Accessibility, UnderlyingType);
+
+    public CsEnum WithAccessibility(CsAccessibility accessibility)
+    {
+        var cloned = ((CsEnum)Clone());
+        cloned.Accessibility = accessibility;
+        return cloned;
     }
 
     #region IEquatable
