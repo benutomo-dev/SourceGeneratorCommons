@@ -398,7 +398,7 @@ internal class SourceBuilder : IDisposable
             CsReturnModifier.Ref => "ref ",
             _ => "",
         });
-        Append(methodDefinitionInfo.ReturnType.ToString());
+        Append(methodDefinitionInfo.ReturnType.GlobalReference);
         Append(" ");
         Append(methodDefinitionInfo.Name);
         if (!methodDefinitionInfo.GenericTypeParams.IsDefaultOrEmpty)
