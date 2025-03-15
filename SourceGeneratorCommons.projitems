@@ -9,6 +9,7 @@
     <Import_RootNamespace>SourceGeneratorCommons</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAttributeTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAccessibilityExtensions.cs" />

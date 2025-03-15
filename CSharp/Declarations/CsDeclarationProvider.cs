@@ -26,7 +26,7 @@ internal class CsDeclarationProvider
 
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
 
-    private HashTable<ITypeSymbol, CsTypeReference> _typeReferenceDictionary;
+    private HashTable<CsTypeDeclaration, CsTypeReference> _typeReferenceDictionary;
 
     public SpecialTypes _specialType;
 
@@ -50,6 +50,7 @@ internal class CsDeclarationProvider
         public CsTypeReference Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid").ToNotNullWithAssert();
         public CsTypeReference Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type").ToNotNullWithAssert();
         public CsTypeReference Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute").ToNotNullWithAssert();
+        public CsTypeReference NullableT => _nullableT ?? _provider.GetTypeReferenceByMetadataName("System.Nullable`1").ToNotNullWithAssert();
 
         private CsDeclarationProvider _provider;
         private CsTypeReference? _type;
@@ -69,6 +70,7 @@ internal class CsDeclarationProvider
         private CsTypeReference? _string;
         private CsTypeReference? _object;
         private CsTypeReference? _attribute;
+        private CsTypeReference? _nullableT;
 
         public SpecialTypes(CsDeclarationProvider provider) => _provider = provider;
     }
@@ -83,7 +85,7 @@ internal class CsDeclarationProvider
 
         _typeDeclarationDictionary = new HashTable<ITypeSymbol, CsTypeDeclaration>(lockObj, SymbolEqualityComparer.Default);
 
-        _typeReferenceDictionary = new HashTable<ITypeSymbol, CsTypeReference>(lockObj, SymbolEqualityComparer.IncludeNullability);
+        _typeReferenceDictionary = new HashTable<CsTypeDeclaration, CsTypeReference>(lockObj, ReferenceEqualityComparer<CsTypeDeclaration>.Default);
 
         _specialType = new SpecialTypes(this);
     }
@@ -122,6 +124,39 @@ internal class CsDeclarationProvider
         return GetTypeReference(typeSymbol).Type;
     }
 
+    internal CsTypeRefWithNullability MakeNullableTypeReference(CsTypeRefWithNullability typeReference)
+    {
+        return MakeNullableTypeReference(typeReference.Type);
+    }
+
+    internal CsTypeRefWithNullability MakeNullableTypeReference(CsTypeReference typeReference)
+    {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        if (typeReference.TypeDefinition.IsValueType)
+        {
+            // エラー型は暫定的に参照型と同じ扱いにするので値型としてハンドリングしない
+            DebugSGen.Assert(typeReference.TypeDefinition is not CsErrorType);
+
+            if (typeReference.TypeDefinition.Is(CsSpecialType.Nullable))
+            {
+                // typeRefernceが元々Nullable<T>
+                return typeReference.WithNullability(true);
+            }
+            else
+            {
+                // 生の値型をNullable<T>でラップ
+                var nullableValueType = SpecialType.NullableT.WithTypeArgs(EquatableArray.Create(EquatableArray.Create(typeReference.WithNullability(false))));
+                return nullableValueType.WithNullability(true);
+            }
+        }
+        else
+        {
+            // 参照型
+            return typeReference.WithNullability(true);
+        }
+    }
+
     internal CsMethod GetMethodDeclaration(IMethodSymbol methodSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
@@ -149,10 +184,10 @@ internal class CsDeclarationProvider
 
         bool isNullableIfRefereceType = !typeSymbol.IsValueType && typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
 
-        if (_typeReferenceDictionary.TryGetValue(typeSymbol, out var cachedTypeReference))
-            return new (cachedTypeReference, isNullableIfRefereceType);
-
         var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, nest);
+
+        if (_typeReferenceDictionary.TryGetValue(typeDeclaration, out var cachedTypeReference))
+            return new (cachedTypeReference, isNullableIfRefereceType);
 
         return new (CreateAndCacheTypeReference(typeDeclaration, typeSymbol, nest), isNullableIfRefereceType);
     }
@@ -500,12 +535,12 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeReference = _typeReferenceDictionary.GetOrAdd(typeSymbol, (self: this, csTypeDeclaration, typeSymbol),
-            static (typeSymbol, createArg) =>
+        var typeReference = _typeReferenceDictionary.GetOrAdd(csTypeDeclaration, (self: this, csTypeDeclaration, typeSymbol),
+            static (csTypeDeclaration, createArg) =>
             {
-                if (createArg.csTypeDeclaration is CsGenericDefinableTypeDeclaration && typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeArguments })
+                if (createArg.csTypeDeclaration is CsGenericDefinableTypeDeclaration && createArg.typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeArguments })
                 {
-                    if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
+                    if (createArg.typeSymbol is not INamedTypeSymbol namedTypeSymbol)
                         throw new InvalidOperationException();
 
                     var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithNullability>>(countTypeArgsLength(namedTypeSymbol));

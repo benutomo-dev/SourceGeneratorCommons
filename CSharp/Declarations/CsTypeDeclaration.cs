@@ -16,15 +16,6 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 {
-    private class ReferenceEqualityComparer<T> : IEqualityComparer<T> where T : class
-    {
-        public static ReferenceEqualityComparer<T> Default { get; } = new ReferenceEqualityComparer<T>();
-
-        public bool Equals(T? x, T? y) => ReferenceEquals(x, y);
-
-        public int GetHashCode(T obj) => RuntimeHelpers.GetHashCode(obj);
-    }
-
     public ITypeContainer? Container { get; private set; }
 
     public abstract bool IsValueType { get; }
