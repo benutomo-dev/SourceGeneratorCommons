@@ -19,7 +19,66 @@ record class CsMethod(
     CsMethodModifier MethodModifier = CsMethodModifier.Default
     )
 {
-    public bool IsVoidMethod => ReturnType.ToString() == "void";
+    /// <summary>
+    /// `void Xxx();`の様な純粋なvoidメソッドである場合に<see langword="true"/>。
+    /// </summary>
+    public bool IsPureVoidMethod => ReturnType.ToString() == "void";
+
+    /// <summary>
+    /// `void Xxx();`の様な純粋なvoidメソッドであるか、型引数のない<see cref="Task"/>または<see cref="ValueTask"/>を返す場合に<see langword="true"/>。
+    /// </summary>
+    /// <remarks>
+    /// 今はまだTaskライクな独自のawait可能型に対する判定までは未実装。
+    /// </remarks>
+    public bool IsVoidLikeMethod
+    {
+        get
+        {
+            if (IsPureVoidMethod)
+                return true;
+
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.Task))
+                return true;
+
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.ValueTask))
+                return true;
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 戻り値の型が以下のいずれかに該当するメソッドである場合に<see langword="true"/>。
+    /// <list type="number">
+    /// <item><see cref="Task"/></item>
+    /// <item><see cref="ValueTask"/></item>
+    /// <item><see cref="Task{TResult}"/></item>
+    /// <item><see cref="ValueTask{TResult}"/></item>
+    /// </list>
+    /// </summary>
+    /// <remarks>
+    /// 今はまだTaskライクな独自のawait可能型に対する判定までは未実装。
+    /// </remarks>
+    public bool IsAwaitableMethod
+    {
+        get
+        {
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.Task))
+                return true;
+
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.ValueTask))
+                return true;
+
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.TaskT))
+                return true;
+
+            if (ReturnType.Type.TypeDefinition.Is(CsSpecialType.ValueTaskT))
+                return true;
+
+            return false;
+        }
+    }
+
 
     public bool IsExtensionMethod => this is CsExtensionMethod;
 
