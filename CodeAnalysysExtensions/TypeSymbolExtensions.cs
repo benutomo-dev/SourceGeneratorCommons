@@ -2,9 +2,6 @@
 #pragma warning disable
 #endif
 using Microsoft.CodeAnalysis;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Text;
 
 namespace SourceGeneratorCommons;
 

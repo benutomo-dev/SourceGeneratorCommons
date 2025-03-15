@@ -1,18 +1,15 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Polyfills;
 using SourceGeneratorCommons.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record struct CsAttribute(
     CsTypeReference AttributeType,
-    object?[] ConstructerArgs = null,
+    object?[]? ConstructerArgs = null,
     EquatableDictionary<string, object?>? NamedArgs = null,
     CsAttributeTarget Target = CsAttributeTarget.Default
     )
@@ -68,10 +65,10 @@ record struct CsAttribute(
 
             isFirstArg = false;
 
-            builder.Append(SymbolDisplay.FormatPrimitive(constructerArg, quoteStrings: true, useHexadecimalNumbers: false));
+            builder.Append(SymbolDisplay.FormatPrimitive(constructerArg!, quoteStrings: true, useHexadecimalNumbers: false));
         }
 
-        foreach (var namedArg in NamedArgs.AsEnumerable() ?? [])
+        foreach (var namedArg in NamedArgs?.AsEnumerable() ?? [])
         {
             if (!isFirstArg)
                 builder.Append(", ");
@@ -80,7 +77,7 @@ record struct CsAttribute(
 
             builder.Append(SymbolDisplay.FormatLiteral(namedArg.Key, quote: true));
             builder.Append(" = ");
-            builder.Append(SymbolDisplay.FormatPrimitive(namedArg.Value, quoteStrings: true, useHexadecimalNumbers: false));
+            builder.Append(SymbolDisplay.FormatPrimitive(namedArg.Value!, quoteStrings: true, useHexadecimalNumbers: false));
         }
 
         if (hasArgs) builder.Append(')');

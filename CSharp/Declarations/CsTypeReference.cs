@@ -4,10 +4,8 @@
 using Microsoft.CodeAnalysis;
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
-using System;
 using System.Collections.Immutable;
 using System.Text;
-using System.Xml.Schema;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 

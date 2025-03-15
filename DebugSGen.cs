@@ -38,6 +38,12 @@ internal static class DebugSGen
     }
 #pragma warning restore CS8777
 
+    public static T ToNotNullWithAssert<T>(this T? value) where T : class
+    {
+        DebugSGen.AssertIsNotNull(value);
+        return value;
+    }
+
     private static bool ShouldBeWorking()
     {
         if (Debugger.IsAttached)

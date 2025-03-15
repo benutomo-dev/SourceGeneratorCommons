@@ -1,23 +1,29 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SourceGeneratorCommons.Collections.Generic;
 
+#pragma warning disable CA1711
 public static class EquatableDictionary
+#pragma warning restore CA1711
 {
-    public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs) => new EquatableDictionary<TKey, TValue>(keyValuePairs);
+    public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
+        where TKey : notnull
+        => new EquatableDictionary<TKey, TValue>(keyValuePairs);
 
-    public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs, IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer) => new EquatableDictionary<TKey, TValue>(keyValuePairs, keyComparer, valueComparer);
+    public static EquatableDictionary<TKey, TValue> ToEquatableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs, IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        where TKey : notnull
+        => new EquatableDictionary<TKey, TValue>(keyValuePairs, keyComparer, valueComparer);
 }
 
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public class EquatableDictionary<TKey, TValue> : IEquatable<EquatableDictionary<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
+    where TKey : notnull
 {
 #pragma warning disable CA1000
     public static EquatableDictionary<TKey, TValue> Empty { get; } = new EquatableDictionary<TKey, TValue>([]);
@@ -95,8 +101,11 @@ public class EquatableDictionary<TKey, TValue> : IEquatable<EquatableDictionary<
 
     public override bool Equals(object? obj) => obj is EquatableDictionary<TKey, TValue> other && Equals(other);
 
-    public bool Equals(EquatableDictionary<TKey, TValue> other)
+    public bool Equals(EquatableDictionary<TKey, TValue>? other)
     {
+        if (other is null)
+            return false;
+
         if (ReferenceEquals(this, other))
             return true;
 

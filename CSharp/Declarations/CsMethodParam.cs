@@ -3,7 +3,6 @@
 #endif
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
-using System.Collections.Generic;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 

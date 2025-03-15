@@ -1,9 +1,7 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
-using Microsoft.CodeAnalysis;
 using SourceGeneratorCommons.Collections.Generic;
-using System.Text;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
@@ -18,5 +16,4 @@ record class CsExtensionMethod(
     CsAccessibility Accessibility = CsAccessibility.Default
     ) : CsMethod(Name, ReturnType, ReturnModifier, IsStatic: true, IsAsync, IsReadOnly, Params, GenericTypeParams, Accessibility, MethodModifier: CsMethodModifier.Default)
 {
-    public bool IsVoidMethod => ReturnType.ToString() == "void";
 }

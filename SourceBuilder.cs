@@ -7,7 +7,6 @@ using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Reflection.Metadata;
 using System.Text;
 
 namespace SourceGeneratorCommons;
@@ -467,7 +466,7 @@ internal class SourceBuilder : IDisposable
                 if (param is CsMethodParamWithDefaultValue paramWithDefaultValue)
                 {
                     Append(" = ");
-                    Append(SymbolDisplay.FormatPrimitive(paramWithDefaultValue.DefaultValue, quoteStrings: true, useHexadecimalNumbers: false));
+                    Append(SymbolDisplay.FormatPrimitive(paramWithDefaultValue.DefaultValue!, quoteStrings: true, useHexadecimalNumbers: false));
                 }
 
                 if (i < methodDefinitionInfo.Params.Length - 1)

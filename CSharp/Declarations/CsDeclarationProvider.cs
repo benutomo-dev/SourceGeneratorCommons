@@ -8,9 +8,7 @@ using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.Collections.Special;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Xml.Linq;
 
 using CodeAnalysysSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
@@ -35,41 +33,41 @@ internal class CsDeclarationProvider
 
     public struct SpecialTypes
     {
-        public CsTypeReference Object => _object ?? _provider.GetTypeReferenceByMetadataName("System.Object");
-        public CsTypeReference String => _string ?? _provider.GetTypeReferenceByMetadataName("System.String");
-        public CsTypeReference Char => _char ?? _provider.GetTypeReferenceByMetadataName("System.Char");
-        public CsTypeReference Byte => _byte ?? _provider.GetTypeReferenceByMetadataName("System.Byte");
-        public CsTypeReference SByte => _sByte ?? _provider.GetTypeReferenceByMetadataName("System.SByte");
-        public CsTypeReference Short => _int16 ?? _provider.GetTypeReferenceByMetadataName("System.Int16");
-        public CsTypeReference Int => _int32 ?? _provider.GetTypeReferenceByMetadataName("System.Int32");
-        public CsTypeReference Long => _int64 ?? _provider.GetTypeReferenceByMetadataName("System.Int64");
-        public CsTypeReference UShort => _uInt16 ?? _provider.GetTypeReferenceByMetadataName("System.UInt16");
-        public CsTypeReference UInt => _uInt32 ?? _provider.GetTypeReferenceByMetadataName("System.UInt32");
-        public CsTypeReference ULong => _uInt64 ?? _provider.GetTypeReferenceByMetadataName("System.UInt64");
-        public CsTypeReference Float => _single ?? _provider.GetTypeReferenceByMetadataName("System.Single");
-        public CsTypeReference Double => _double ?? _provider.GetTypeReferenceByMetadataName("System.Double");
-        public CsTypeReference Decimal => _decimal ?? _provider.GetTypeReferenceByMetadataName("System.Decimal");
-        public CsTypeReference Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid");
-        public CsTypeReference Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type");
-        public CsTypeReference Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute");
+        public CsTypeReference Object => _object ?? _provider.GetTypeReferenceByMetadataName("System.Object").ToNotNullWithAssert();
+        public CsTypeReference String => _string ?? _provider.GetTypeReferenceByMetadataName("System.String").ToNotNullWithAssert();
+        public CsTypeReference Char => _char ?? _provider.GetTypeReferenceByMetadataName("System.Char").ToNotNullWithAssert();
+        public CsTypeReference Byte => _byte ?? _provider.GetTypeReferenceByMetadataName("System.Byte").ToNotNullWithAssert();
+        public CsTypeReference SByte => _sByte ?? _provider.GetTypeReferenceByMetadataName("System.SByte").ToNotNullWithAssert();
+        public CsTypeReference Short => _int16 ?? _provider.GetTypeReferenceByMetadataName("System.Int16").ToNotNullWithAssert();
+        public CsTypeReference Int => _int32 ?? _provider.GetTypeReferenceByMetadataName("System.Int32").ToNotNullWithAssert();
+        public CsTypeReference Long => _int64 ?? _provider.GetTypeReferenceByMetadataName("System.Int64").ToNotNullWithAssert();
+        public CsTypeReference UShort => _uInt16 ?? _provider.GetTypeReferenceByMetadataName("System.UInt16").ToNotNullWithAssert();
+        public CsTypeReference UInt => _uInt32 ?? _provider.GetTypeReferenceByMetadataName("System.UInt32").ToNotNullWithAssert();
+        public CsTypeReference ULong => _uInt64 ?? _provider.GetTypeReferenceByMetadataName("System.UInt64").ToNotNullWithAssert();
+        public CsTypeReference Float => _single ?? _provider.GetTypeReferenceByMetadataName("System.Single").ToNotNullWithAssert();
+        public CsTypeReference Double => _double ?? _provider.GetTypeReferenceByMetadataName("System.Double").ToNotNullWithAssert();
+        public CsTypeReference Decimal => _decimal ?? _provider.GetTypeReferenceByMetadataName("System.Decimal").ToNotNullWithAssert();
+        public CsTypeReference Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid").ToNotNullWithAssert();
+        public CsTypeReference Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type").ToNotNullWithAssert();
+        public CsTypeReference Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute").ToNotNullWithAssert();
 
         private CsDeclarationProvider _provider;
-        private CsTypeReference _type;
-        private CsTypeReference _guid;
-        private CsTypeReference _decimal;
-        private CsTypeReference _double;
-        private CsTypeReference _single;
-        private CsTypeReference _uInt64;
-        private CsTypeReference _uInt32;
-        private CsTypeReference _uInt16;
-        private CsTypeReference _int64;
-        private CsTypeReference _int32;
-        private CsTypeReference _int16;
-        private CsTypeReference _sByte;
-        private CsTypeReference _byte;
-        private CsTypeReference _char;
-        private CsTypeReference _string;
-        private CsTypeReference _object;
+        private CsTypeReference? _type;
+        private CsTypeReference? _guid;
+        private CsTypeReference? _decimal;
+        private CsTypeReference? _double;
+        private CsTypeReference? _single;
+        private CsTypeReference? _uInt64;
+        private CsTypeReference? _uInt32;
+        private CsTypeReference? _uInt16;
+        private CsTypeReference? _int64;
+        private CsTypeReference? _int32;
+        private CsTypeReference? _int16;
+        private CsTypeReference? _sByte;
+        private CsTypeReference? _byte;
+        private CsTypeReference? _char;
+        private CsTypeReference? _string;
+        private CsTypeReference? _object;
         private CsTypeReference? _attribute;
 
         public SpecialTypes(CsDeclarationProvider provider) => _provider = provider;
@@ -114,9 +112,14 @@ internal class CsDeclarationProvider
         return typeReference;
     }
 
-    internal CsTypeReference GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
+    internal CsTypeReference? GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
     {
-        return GetTypeReference(Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName)).Type;
+        var typeSymbol = Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+
+        if (typeSymbol is null)
+            return null;
+
+        return GetTypeReference(typeSymbol).Type;
     }
 
     internal CsMethod GetMethodDeclaration(IMethodSymbol methodSymbol)

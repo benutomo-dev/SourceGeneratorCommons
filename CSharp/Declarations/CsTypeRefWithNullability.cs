@@ -2,7 +2,6 @@
 #pragma warning disable
 #endif
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
-using System.Reflection.Metadata;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
