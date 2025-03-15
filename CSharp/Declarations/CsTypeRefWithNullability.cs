@@ -1,6 +1,7 @@
 ﻿#if !ENABLE_SOURCE_GENERATOR_COMMONS_WARNING
 #pragma warning disable
 #endif
+using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
@@ -91,6 +92,11 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
     public CsTypeRefWithNullability ToDisnullable()
     {
         return new CsTypeRefWithNullability(Type, isNullableIfRefereceType: false);
+    }
+
+    public CsTypeRefWithNullability WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    {
+        return new CsTypeRefWithNullability(Type.WithTypeArgs(typeArgs), isNullableIfRefereceType: IsNullable);
     }
 
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
