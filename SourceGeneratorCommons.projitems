@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAttributeTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAccessibilityExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsClassModifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Special\CreateAddValue.cs" />
@@ -21,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsInterfaceInplementableTypeDeclaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsMethodModifierExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsReturnModifierExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsSpecialType.cs" />
