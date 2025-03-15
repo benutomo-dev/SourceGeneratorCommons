@@ -30,7 +30,7 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
                 return ((INullableRefarences)Type).NullablePatternInternalReference;
             }
 
-            if (Type.TypeDefinition.Is(CsSpecialType.Nullable))
+            if (Type.TypeDefinition.Is(CsSpecialType.NullableT))
             {
                 DebugSGen.Assert(!Type.TypeArgs.IsDefaultOrEmpty);
                 DebugSGen.Assert(!Type.TypeArgs[0].IsDefaultOrEmpty && Type.TypeArgs[0].Length == 1);
@@ -52,7 +52,7 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
                 return ((INullableRefarences)Type).NullablePatternGlobalReference;
             }
 
-            if (Type.TypeDefinition.Is(CsSpecialType.Nullable))
+            if (Type.TypeDefinition.Is(CsSpecialType.NullableT))
             {
                 DebugSGen.Assert(!Type.TypeArgs.IsDefaultOrEmpty);
                 DebugSGen.Assert(!Type.TypeArgs[0].IsDefaultOrEmpty && Type.TypeArgs[0].Length == 1);

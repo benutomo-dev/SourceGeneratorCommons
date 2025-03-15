@@ -8,7 +8,7 @@ internal static class CsTypeDeclarationExtensions
 {
     public static bool Is(this CsTypeDeclaration typeDeclaration, CsSpecialType specialType)
     {
-        if (typeDeclaration is not { Container: CsNameSpace { IsSystem: true } })
+        if (typeDeclaration is not { Container: CsNameSpace { IsDefinedUnderSystemNameSpace: true } })
             return false;
 
         var expectedTypeName = specialType switch
@@ -28,10 +28,30 @@ internal static class CsTypeDeclarationExtensions
             CsSpecialType.String => nameof(String),
             CsSpecialType.Guid => nameof(Guid),
             CsSpecialType.Decimal => nameof(Decimal),
-            CsSpecialType.Nullable => nameof(Nullable),
+            CsSpecialType.NullableT => nameof(Nullable),
+            CsSpecialType.Task => nameof(Task),
+            CsSpecialType.TaskT => nameof(Task<int>),
+            CsSpecialType.ValueTask => nameof(ValueTask),
+            CsSpecialType.ValueTaskT => nameof(ValueTask<int>),
             _ => throw new ArgumentException(null, nameof(specialType)),
         };
 
-        return typeDeclaration.Name == expectedTypeName;
+        if (typeDeclaration.Name == expectedTypeName)
+        {
+            switch (specialType)
+            {
+                case CsSpecialType.NullableT:
+                case CsSpecialType.TaskT:
+                case CsSpecialType.ValueTaskT:
+                    return typeDeclaration.GenericTypeParams.Length == 1;
+                case CsSpecialType.Task:
+                case CsSpecialType.ValueTask:
+                    return !typeDeclaration.IsGenericType;
+                default:
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

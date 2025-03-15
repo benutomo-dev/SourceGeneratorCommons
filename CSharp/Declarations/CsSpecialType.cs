@@ -20,5 +20,9 @@ internal enum CsSpecialType
     String,
     Guid,
     Decimal,
-    Nullable,
+    NullableT,
+    Task,
+    ValueTask,
+    TaskT,
+    ValueTaskT,
 }

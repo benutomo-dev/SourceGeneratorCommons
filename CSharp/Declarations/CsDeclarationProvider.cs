@@ -138,7 +138,7 @@ internal class CsDeclarationProvider
             // エラー型は暫定的に参照型と同じ扱いにするので値型としてハンドリングしない
             DebugSGen.Assert(typeReference.TypeDefinition is not CsErrorType);
 
-            if (typeReference.TypeDefinition.Is(CsSpecialType.Nullable))
+            if (typeReference.TypeDefinition.Is(CsSpecialType.NullableT))
             {
                 // typeRefernceが元々Nullable<T>
                 return typeReference.WithNullability(true);
