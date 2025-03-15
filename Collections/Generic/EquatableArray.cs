@@ -2,6 +2,7 @@
 #pragma warning disable
 #endif
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace SourceGeneratorCommons.Collections.Generic;
 
@@ -25,6 +26,7 @@ public static class EquatableArray
 #if FeatureMemory
 [System.Runtime.CompilerServices.CollectionBuilder(typeof(EquatableArray), nameof(EquatableArray.Create))]
 #endif
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<EquatableArray<T>>
 {
 #pragma warning disable CA1000
@@ -82,4 +84,6 @@ public readonly struct EquatableArray<T>(ImmutableArray<T> values) : IEquatable<
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);
 
     public static bool operator !=(EquatableArray<T> left, EquatableArray<T> right) => !left.Equals(right);
+
+    private string GetDebuggerDisplay() => $"{nameof(Length)} = {Length}";
 }
