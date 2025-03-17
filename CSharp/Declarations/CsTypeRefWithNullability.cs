@@ -3,6 +3,7 @@
 #endif
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
+using System.Collections.Immutable;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
@@ -97,6 +98,33 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
     public CsTypeRefWithNullability WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
     {
         return new CsTypeRefWithNullability(Type.WithTypeArgs(typeArgs), isNullableIfRefereceType: IsNullable);
+    }
+
+    public CsTypeRefWithNullability WithTypeRedirection(IReadOnlyDictionary<CsTypeReference, CsTypeReference> typeRedirectDictionary)
+    {
+        if (typeRedirectDictionary.TryGetValue(Type, out var remapedType))
+            return remapedType.WithNullability(IsNullable);
+
+        var remapedTypeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithNullability>>(Type.TypeArgs.Length);
+
+        foreach (var innerTypeArgs in Type.TypeArgs.Values)
+        {
+            var remapedInnerTypeArgsBuilder = ImmutableArray.CreateBuilder<CsTypeRefWithNullability>(innerTypeArgs.Length);
+
+            foreach (var typeArg in innerTypeArgs.Values)
+                remapedInnerTypeArgsBuilder.Add(typeArg.WithTypeRedirection(typeRedirectDictionary));
+
+            remapedTypeArgsBuilder.Add(remapedInnerTypeArgsBuilder.MoveToImmutable());
+        }
+
+        var remapedTypeArgs = remapedTypeArgsBuilder.MoveToImmutable().ToEquatableArray();
+
+        if (Type.TypeArgs.Equals(remapedTypeArgs))
+            return this;
+
+        return Type
+            .WithTypeArgs(remapedTypeArgs)
+            .WithNullability(IsNullable);
     }
 
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
