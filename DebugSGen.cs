@@ -29,7 +29,7 @@ internal static class DebugSGen
 
 #pragma warning disable CS8777
     [Conditional("DEBUG")]
-    public static void AssertIsNotNull<T>([NotNull] T? value) where T : class
+    public static void AssertIsNotNull<T>([NotNull] T? value)
     {
         if (!ShouldBeWorking())
             return;
