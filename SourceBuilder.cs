@@ -431,9 +431,6 @@ internal class SourceBuilder : IDisposable
         {
             for (int i = 0; i < methodDefinitionInfo.Params.Length; i++)
             {
-                if (i == 0 && methodDefinitionInfo.IsExtensionMethod)
-                    Append("this ");
-
                 var param = methodDefinitionInfo.Params[i];
 
                 if (!param.Attributes.IsDefaultOrEmpty)
@@ -444,6 +441,9 @@ internal class SourceBuilder : IDisposable
                     }
                     Append(" ");
                 }
+
+                if (i == 0 && methodDefinitionInfo.IsExtensionMethod)
+                    Append("this ");
 
                 if (param.IsScoped)
                     Append("scoped ");
