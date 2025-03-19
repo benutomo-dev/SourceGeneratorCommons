@@ -85,6 +85,10 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
             IsNullable = true;
     }
 
+
+    /// <remarks>
+    /// このメソッドではTなどの型パラメータは元の型制約に関係なく常に参照型とみなす扱いとなる。
+    /// </remarks>
     public CsTypeRefWithNullability ToNullableIfReferenceType()
     {
         return new CsTypeRefWithNullability(Type, isNullableIfRefereceType: true);
