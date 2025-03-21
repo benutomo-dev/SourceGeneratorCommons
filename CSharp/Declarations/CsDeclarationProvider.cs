@@ -479,9 +479,9 @@ internal class CsDeclarationProvider
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
-                        DebugSGen.AssertIsNotNull(namedTypeSymbol.DelegateInvokeMethod);
+                        DebugSGen.AssertIsNotNull(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod);
 
-                        var returnModifier = namedTypeSymbol.DelegateInvokeMethod.ToCsReturnModifier();
+                        var returnModifier = namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.ToCsReturnModifier();
 
                         // 自己参照する型パラメータを含むインターフェイスなどの存在による構築時の型参照の無限ループを回避するために、
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
@@ -499,11 +499,11 @@ internal class CsDeclarationProvider
 
                     var container = BuildContainer(namedTypeSymbol, nest);
 
-                    DebugSGen.AssertIsNotNull(namedTypeSymbol.DelegateInvokeMethod);
+                    DebugSGen.AssertIsNotNull(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod);
 
-                    var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.DelegateInvokeMethod.ReturnType, nest);
+                    var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.ReturnType, nest);
 
-                    var methodParams = namedTypeSymbol.DelegateInvokeMethod.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
+                    var methodParams = namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
 
                     var genericTypeParams = BuildGenericTypeParams(namedTypeSymbol, nest);
 
