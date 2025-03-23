@@ -52,7 +52,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericConstraintTypeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericTypeConstraints.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsGenericTypeParam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\ITypeContainer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsMethod.cs" />

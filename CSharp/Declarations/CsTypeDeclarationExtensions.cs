@@ -46,7 +46,7 @@ internal static class CsTypeDeclarationExtensions
                     return typeDeclaration.GenericTypeParams.Length == 1;
                 case CsSpecialType.Task:
                 case CsSpecialType.ValueTask:
-                    return !typeDeclaration.IsGenericType;
+                    return typeDeclaration.Arity == 0;
                 default:
                     return true;
             }

@@ -9,9 +9,9 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 {
     public sealed override bool IsValueType => false;
 
-    public sealed override bool IsGenericType => false;
+    public sealed override int Arity => 0;
 
-    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+    public sealed override EquatableArray<CsTypeParameterDeclaration> GenericTypeParams => EquatableArray<CsTypeParameterDeclaration>.Empty;
 
     public CsTypeRefWithAnnotation ElementType { get; private set; }
 

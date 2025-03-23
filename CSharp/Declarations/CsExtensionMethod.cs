@@ -12,7 +12,7 @@ record class CsExtensionMethod(
     bool IsAsync = false,
     bool IsReadOnly = false,
     EquatableArray<CsMethodParam> Params = default,
-    EquatableArray<CsGenericTypeParam> GenericTypeParams = default,
+    EquatableArray<CsTypeParameterDeclaration> GenericTypeParams = default,
     CsAccessibility Accessibility = CsAccessibility.Default
     ) : CsMethod(Name, ReturnType, ReturnModifier, IsStatic: true, IsAsync, IsReadOnly, Params, GenericTypeParams, Accessibility, MethodModifier: CsMethodModifier.Default)
 {

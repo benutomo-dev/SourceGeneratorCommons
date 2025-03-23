@@ -11,9 +11,9 @@ sealed class CsErrorType : CsTypeDeclaration, IEquatable<CsErrorType>
 
     public sealed override bool IsReferenceType => false;
 
-    public sealed override bool IsGenericType => false;
+    public sealed override int Arity => 0;
 
-    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+    public sealed override EquatableArray<CsTypeParameterDeclaration> GenericTypeParams => EquatableArray<CsTypeParameterDeclaration>.Empty;
 
     public CsErrorType(string name) : base(container: null, name)
     {

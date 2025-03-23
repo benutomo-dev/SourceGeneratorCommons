@@ -94,7 +94,7 @@ internal class CsDeclarationProvider
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, nest: 0);
+        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, isSystemSymbolParameter: false, nest: 0);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
         ((ILazyConstructionRoot)typeDeclaration).ConstructionFullCompleted.Wait(_rootCancellationToken);
@@ -106,7 +106,7 @@ internal class CsDeclarationProvider
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeReference = GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol, nest: 0);
+        var typeReference = GetTypeReferenceFromCachedTypeReferenceFirst(typeSymbol, isSystemSymbolParameter: false, nest: 0);
 
         // 並行スレッドで作られているインスタンスの生成完了を待機
         ((ILazyConstructionRoot)typeReference.Type).ConstructionFullCompleted.Wait(_rootCancellationToken);
@@ -164,7 +164,7 @@ internal class CsDeclarationProvider
         return GetMethodDeclarationInternal(methodSymbol, nest: 0);
     }
 
-    private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol, int nest)
+    private CsTypeDeclaration GetTypeDeclarationFromCachedTypeDeclarationFirst(ITypeSymbol typeSymbol, bool isSystemSymbolParameter, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -173,10 +173,10 @@ internal class CsDeclarationProvider
         if (_typeDeclarationDictionary.TryGetValue(typeSymbol, out var cachedTypeDeclaration))
             return cachedTypeDeclaration;
 
-        return CreateAndCacheTypeDeclaration(typeSymbol, nest);
+        return CreateAndCacheTypeDeclaration(typeSymbol, isSystemSymbolParameter, nest);
     }
 
-    private CsTypeRefWithAnnotation GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, int nest)
+    private CsTypeRefWithAnnotation GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, bool isSystemSymbolParameter, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -184,7 +184,7 @@ internal class CsDeclarationProvider
 
         bool isNullableIfRefereceType = !typeSymbol.IsValueType && typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
 
-        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, nest);
+        var typeDeclaration = GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol, isSystemSymbolParameter, nest);
 
         if (_typeReferenceDictionary.TryGetValue(typeDeclaration, out var cachedTypeReference))
             return new (cachedTypeReference, isNullableIfRefereceType);
@@ -198,7 +198,7 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType, nest);
+        var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(methodSymbol.ReturnType, isSystemSymbolParameter: false, nest);
 
         var methodModifier = methodSymbol.ToCsMethodModifier();
 
@@ -264,7 +264,7 @@ internal class CsDeclarationProvider
         }
     }
 
-    private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol, int nest)
+    private CsTypeDeclaration CreateAndCacheTypeDeclaration(ITypeSymbol typeSymbol, bool isSystemSymbolParameter, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -274,12 +274,38 @@ internal class CsDeclarationProvider
 
         if (typeSymbol is ITypeParameterSymbol typeParameterSymbol)
         {
-            var typeParameterDeclaration = _typeDeclarationDictionary.GetOrAdd(
-                typeParameterSymbol,
-                static typeParameterSymbol => new CsTypeParameterDeclaration(GetNameWithInternIfSystem(typeParameterSymbol)),
-                out isAdded);
+            Action<CsGenericTypeConstraints>? completeTypeParameterDeclaration = null;
 
-            DebugSGen.Assert(((ILazyConstructionRoot)typeParameterDeclaration).ConstructionFullCompleted.IsCompleted);
+            CsTypeDeclaration typeParameterDeclaration;
+            if (isSystemSymbolParameter)
+            {
+                typeParameterDeclaration = _typeDeclarationDictionary.GetOrAdd(
+                    typeParameterSymbol, ref completeTypeParameterDeclaration,
+                    static (ITypeParameterSymbol typeParameterSymbol, ref Action<CsGenericTypeConstraints>? completeTypeParameterDeclaration) =>
+                    {
+                        return new CsTypeParameterDeclaration(GetInterned(typeParameterSymbol.Name, withIntern: true), out completeTypeParameterDeclaration);
+                    },
+                    out isAdded);
+            }
+            else
+            {
+                typeParameterDeclaration = _typeDeclarationDictionary.GetOrAdd(
+                    typeParameterSymbol, ref completeTypeParameterDeclaration,
+                    static (ITypeParameterSymbol typeParameterSymbol, ref Action<CsGenericTypeConstraints>? completeTypeParameterDeclaration) =>
+                    {
+                        return new CsTypeParameterDeclaration(GetInterned(typeParameterSymbol.Name, withIntern: false), out completeTypeParameterDeclaration);
+                    },
+                    out isAdded);
+            }
+
+            if (isAdded)
+            {
+                DebugSGen.AssertIsNotNull(completeTypeParameterDeclaration);
+
+                var genericTypeConstraints = BuildGenericTypeConstraints(typeParameterSymbol, nest);
+
+                completeTypeParameterDeclaration(genericTypeConstraints);
+            }
 
             return typeParameterDeclaration;
         }
@@ -301,7 +327,7 @@ internal class CsDeclarationProvider
 
                 var container = BuildContainer(arrayTypeSymbol, nest);
 
-                var elementTypeReference = GetTypeReferenceFromCachedTypeReferenceFirst(arrayTypeSymbol.ElementType, nest);
+                var elementTypeReference = GetTypeReferenceFromCachedTypeReferenceFirst(arrayTypeSymbol.ElementType, isSystemSymbolParameter: false, nest);
 
                 completeArrayDeclaration(container, elementTypeReference);
             }
@@ -353,10 +379,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Class)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration = null;
 
                 var classDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeClassDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -372,6 +398,7 @@ internal class CsDeclarationProvider
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsClass(
                             GetNameWithInternIfSystem(namedTypeSymbol),
+                            namedTypeSymbol.Arity,
                             accessibility,
                             classModifier,
                             out completeClassDeclaration);
@@ -391,7 +418,7 @@ internal class CsDeclarationProvider
                     if (!(namedTypeSymbol is { BaseType: { SpecialType: not CodeAnalysysSpecialType.System_Object } baseTypeSymbol }))
                         baseTypeSymbol = null;
 
-                    var baseTypeReference = baseTypeSymbol is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseTypeSymbol, nest).Type;
+                    var baseTypeReference = baseTypeSymbol is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseTypeSymbol, isSystemSymbolParameter: false, nest).Type;
 
                     completeClassDeclaration(container, genericTypeParams, baseTypeReference, interfaces);
                 }
@@ -401,10 +428,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Interface)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration = null;
 
                 var interfaceDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeInterfaceDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -412,6 +439,7 @@ internal class CsDeclarationProvider
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsInterface(
                             GetNameWithInternIfSystem(namedTypeSymbol),
+                            namedTypeSymbol.Arity,
                             accessibility,
                             out completeInterfaceDeclaration);
                     },
@@ -435,10 +463,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Struct)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeStructDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>>? completeStructDeclaration = null;
 
                 var structDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeStructDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeStructDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>>? completeStructDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -446,6 +474,7 @@ internal class CsDeclarationProvider
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsStruct(
                             GetNameWithInternIfSystem(namedTypeSymbol),
+                            namedTypeSymbol.Arity,
                             accessibility,
                             namedTypeSymbol.IsReadOnly,
                             namedTypeSymbol.IsRefLikeType,
@@ -472,10 +501,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Delegate)
             {
-                Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeDelegateDeclaration = null;
+                Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsTypeParameterDeclaration>>? completeDelegateDeclaration = null;
 
                 var delegateDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeDelegateDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeInterfaceDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsTypeParameterDeclaration>>? completeInterfaceDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -487,6 +516,7 @@ internal class CsDeclarationProvider
                         // 型情報の参照が必要なパラメータを除いた状態で作成。
                         return new CsDelegate(
                             GetNameWithInternIfSystem(namedTypeSymbol),
+                            namedTypeSymbol.Arity,
                             accessibility,
                             returnModifier,
                             out completeInterfaceDeclaration);
@@ -501,7 +531,7 @@ internal class CsDeclarationProvider
 
                     DebugSGen.AssertIsNotNull(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod);
 
-                    var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.ReturnType, nest);
+                    var returnType = GetTypeReferenceFromCachedTypeReferenceFirst(namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.ReturnType, isSystemSymbolParameter: false, nest);
 
                     var methodParams = namedTypeSymbol.OriginalDefinition.DelegateInvokeMethod.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
 
@@ -535,51 +565,31 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var typeReference = _typeReferenceDictionary.GetOrAdd(csTypeDeclaration, (self: this, csTypeDeclaration, typeSymbol),
+        var typeReference = _typeReferenceDictionary.GetOrAdd(csTypeDeclaration, (self: this, csTypeDeclaration, typeSymbol, nest),
             static (csTypeDeclaration, createArg) =>
             {
-                if (createArg.csTypeDeclaration is CsGenericDefinableTypeDeclaration && createArg.typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeArguments })
-                {
-                    if (createArg.typeSymbol is not INamedTypeSymbol namedTypeSymbol)
-                        throw new InvalidOperationException();
-
-                    var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(countTypeArgsLength(namedTypeSymbol));
-                    fillTypeArgs(createArg.self, typeArgsBuilder, namedTypeSymbol);
-                    var typeArgs = typeArgsBuilder.MoveToImmutable();
-
-                    return new CsTypeRef(
-                        createArg.csTypeDeclaration,
-                        typeArgs);
-                }
-                else
-                {
-                    return new CsTypeRef(
-                        createArg.csTypeDeclaration,
-                        EquatableArray<EquatableArray<CsTypeRefWithAnnotation>>.Empty
-                        );
-                }
+                return createArg.self.BuildTypeReference(csTypeDeclaration, createArg.typeSymbol, createArg.nest);
             }, out _);
 
         return typeReference;
-
-        static int countTypeArgsLength(INamedTypeSymbol namedTypeSymbol)
-        {
-            if (namedTypeSymbol.ContainingType is not null)
-                return countTypeArgsLength(namedTypeSymbol.ContainingType) + 1;
-            else
-                return 1;
-        }
-
-        static void fillTypeArgs(CsDeclarationProvider self, ImmutableArray<EquatableArray<CsTypeRefWithAnnotation>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
-        {
-            if (namedTypeSymbol.ContainingType is not null)
-                fillTypeArgs(self, typeArgsBuilder, namedTypeSymbol.ContainingType);
-
-            typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(self.GetTypeReferenceFromCachedTypeReferenceFirst).ToImmutableArray());
-        }
     }
 
-    private CsGenericTypeParam BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, bool isSystemSymbolParameter, int nest)
+    private CsTypeParameterDeclaration BuildGenericTypeParam(ITypeParameterSymbol typeParameterSymbol, bool isSystemSymbolParameter, int nest)
+    {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        var constraints = BuildGenericTypeConstraints(typeParameterSymbol, nest);
+
+        var genericTypeParam = new CsTypeParameterDeclaration(
+            GetInterned(typeParameterSymbol.Name, withIntern: isSystemSymbolParameter),
+            constraints);
+
+        return genericTypeParam;
+    }
+
+    private CsGenericTypeConstraints BuildGenericTypeConstraints(ITypeParameterSymbol typeParameterSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -602,31 +612,23 @@ internal class CsDeclarationProvider
         else
             genericConstraintTypeCategory = CsGenericConstraintTypeCategory.Any;
 
-        var baseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => !v.IsAbstract);
-        var interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.IsAbstract);
+        var baseType = typeParameterSymbol.ConstraintTypes.FirstOrDefault(v => v.TypeKind != TypeKind.Interface);
+        var interfaces = typeParameterSymbol.ConstraintTypes.Where(v => v.TypeKind == TypeKind.Interface);
 
-        var constraints = new CsGenericTypeConstraints
-        {
-            TypeCategory = genericConstraintTypeCategory,
-            HaveDefaultConstructor = typeParameterSymbol.HasConstructorConstraint,
+        var constraints = CsGenericTypeConstraints.Get(
+            genericConstraintTypeCategory,
+            typeParameterSymbol.HasConstructorConstraint,
+            baseType is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseType, isSystemSymbolParameter: false, nest).Type,
+            typeParameterSymbol.ConstraintTypes
+                .Where(v => v.TypeKind == TypeKind.Interface)
+                .Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, isSystemSymbolParameter: false, nest).Type)
+                .ToImmutableArray()
 #if CODE_ANALYSYS4_12_2_OR_GREATER
-            AllowRefStruct = typeParameterSymbol.AllowsRefLikeType,
+            , typeParameterSymbol.AllowsRefLikeType
 #endif
+            );
 
-            BaseType = baseType is null ? null : GetTypeReferenceFromCachedTypeReferenceFirst(baseType, nest).Type,
-            Interfaces = typeParameterSymbol.ConstraintTypes
-                .Where(v => v.IsAbstract)
-                .Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, nest).Type)
-                .ToImmutableArray(),
-        };
-
-        var genericTypeParam = new CsGenericTypeParam
-        {
-            Name  = GetInterned(typeParameterSymbol.Name, withIntern: isSystemSymbolParameter),
-            Where = constraints,
-        };
-
-        return genericTypeParam;
+        return constraints;
     }
 
     private CsMethodParam BuildMethodParam(IParameterSymbol parameterSymbol, int nest)
@@ -635,7 +637,7 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type, nest);
+        var paramType = GetTypeReferenceFromCachedTypeReferenceFirst(parameterSymbol.Type, isSystemSymbolParameter: false, nest);
 
         var paramModifier = parameterSymbol.RefKind switch
         {
@@ -671,7 +673,7 @@ internal class CsDeclarationProvider
         _rootCancellationToken.ThrowIfCancellationRequested();
 
         if (typeSymbol.ContainingType is not null)
-            return GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, nest);
+            return GetTypeDeclarationFromCachedTypeDeclarationFirst(typeSymbol.ContainingType, isSystemSymbolParameter: false, nest);
 
         if (typeSymbol.ContainingNamespace is not null)
         {
@@ -684,13 +686,13 @@ internal class CsDeclarationProvider
         return null;
     }
 
-    private EquatableArray<CsGenericTypeParam> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol, int nest)
+    private EquatableArray<CsTypeParameterDeclaration> BuildGenericTypeParams(INamedTypeSymbol namedTypeSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        EquatableArray<CsGenericTypeParam> genericTypeParams;
+        EquatableArray<CsTypeParameterDeclaration> genericTypeParams;
 
         if (!namedTypeSymbol.TypeArguments.IsDefaultOrEmpty)
         {
@@ -698,7 +700,7 @@ internal class CsDeclarationProvider
 
             var isSystemSymbolParameter = IsSystemSymbol(namedTypeSymbol);
 
-            var typeParamsBuilder = ImmutableArray.CreateBuilder<CsGenericTypeParam>(originalDefinitionTypeSymbol.TypeParameters.Length);
+            var typeParamsBuilder = ImmutableArray.CreateBuilder<CsTypeParameterDeclaration>(originalDefinitionTypeSymbol.TypeParameters.Length);
 
             for (int i = 0; i < namedTypeSymbol.TypeParameters.Length; i++)
             {
@@ -711,10 +713,90 @@ internal class CsDeclarationProvider
         }
         else
         {
-            genericTypeParams = EquatableArray<CsGenericTypeParam>.Empty;
+            genericTypeParams = EquatableArray<CsTypeParameterDeclaration>.Empty;
         }
 
         return genericTypeParams;
+    }
+
+    private CsTypeRef BuildTypeReference(CsTypeDeclaration typeDeclaration, ITypeSymbol typeSymbol, int nest)
+    {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        int nonGenericNestCount = 0;
+        int typeArgsOuterLength = 0;
+        if (!validate(ref nonGenericNestCount, ref typeArgsOuterLength, typeDeclaration, typeSymbol))
+            throw new InvalidOperationException();
+
+        DebugSGen.Assert(nonGenericNestCount != 0);
+        DebugSGen.Assert(typeArgsOuterLength > 0);
+
+        if (nonGenericNestCount > 0 && nonGenericNestCount <= CsTypeRef.s_nonGenericNonNestedTypeArgs.Length)
+            return CsTypeRef.UsafeCreateFrom(typeDeclaration, CsTypeRef.s_nonGenericNonNestedTypeArgs[nonGenericNestCount - 1]);
+
+        var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(typeArgsOuterLength);
+        fillTypeArgs(this, typeArgsBuilder, typeSymbol, nest);
+        var typeArgs = typeArgsBuilder.MoveToImmutable();
+
+        return CsTypeRef.UsafeCreateFrom(typeDeclaration, typeArgs);
+
+
+        static bool validate(ref int nonGenericNestCount, ref int typeArgsOuterLength, CsTypeDeclaration typeDeclaration, ITypeSymbol typeSymbol)
+        {
+            typeArgsOuterLength++;
+
+            if (typeDeclaration.Arity > 0)
+            {
+                nonGenericNestCount = -1;
+
+                if (typeSymbol is not INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } typeSymbolTypeArguments })
+                    return false;
+
+                if (typeDeclaration.Arity != typeSymbolTypeArguments.Length)
+                    return false;
+            }
+            else
+            {
+                if (nonGenericNestCount >= 0)
+                    nonGenericNestCount++;
+
+                if (typeSymbol is INamedTypeSymbol { TypeArguments: { IsDefaultOrEmpty: false } })
+                    return false;
+            }
+
+            var typeContainer = typeDeclaration.Container as CsTypeDeclaration;
+            var symbolTypeContainer = typeSymbol.Kind == SymbolKind.TypeParameter
+                ? null
+                : typeSymbol.ContainingType;
+
+            if (typeContainer is null != symbolTypeContainer is null)
+                return false;
+
+            if (typeContainer is not null)
+            {
+                DebugSGen.AssertIsNotNull(typeSymbol);
+                return validate(ref nonGenericNestCount, ref typeArgsOuterLength, typeContainer, symbolTypeContainer!);
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        static void fillTypeArgs(CsDeclarationProvider declarationProvider, ImmutableArray<EquatableArray<CsTypeRefWithAnnotation>>.Builder typeArgsBuilder, ITypeSymbol typeSymbol, int nest)
+        {
+            if (typeSymbol.ContainingType is not null)
+                fillTypeArgs(declarationProvider, typeArgsBuilder, typeSymbol.ContainingType, nest);
+
+            var isSystemSymbol = IsSystemSymbol(typeSymbol);
+
+            if (typeSymbol is INamedTypeSymbol { TypeArguments.IsDefaultOrEmpty: false } namedTypeSymbol)
+                typeArgsBuilder.Add(namedTypeSymbol.TypeArguments.Select(v=> declarationProvider.GetTypeReferenceFromCachedTypeReferenceFirst(v, isSystemSymbol, nest)).ToImmutableArray());
+            else
+                typeArgsBuilder.Add(EquatableArray<CsTypeRefWithAnnotation>.Empty);
+        }
     }
 
     private EquatableArray<CsTypeRef> BuildInterfaces(INamedTypeSymbol namedTypeSymbol, int nest)
@@ -723,7 +805,7 @@ internal class CsDeclarationProvider
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
         _rootCancellationToken.ThrowIfCancellationRequested();
 
-        var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, nest).Type).ToImmutableArray().ToEquatableArray();
+        var interfaces = namedTypeSymbol.Interfaces.Select(v => GetTypeReferenceFromCachedTypeReferenceFirst(v, isSystemSymbolParameter: false, nest).Type).ToImmutableArray().ToEquatableArray();
         return interfaces;
     }
 

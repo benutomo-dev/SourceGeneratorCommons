@@ -7,23 +7,45 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 sealed class CsTypeParameterDeclaration : CsTypeDeclaration, IEquatable<CsTypeParameterDeclaration>
 {
-    public sealed override bool IsValueType => false;
+    public sealed override bool IsValueType => Where.TypeCategory is not (CsGenericConstraintTypeCategory.Class or CsGenericConstraintTypeCategory.NullableClass);
 
-    public sealed override bool IsReferenceType => false;
+    public sealed override bool IsReferenceType => Where.TypeCategory is not (CsGenericConstraintTypeCategory.Struct or CsGenericConstraintTypeCategory.Unmanaged);
 
-    public sealed override bool IsGenericType => false;
+    public sealed override int Arity => 0;
 
-    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+    public CsGenericTypeConstraints Where { get; private set; }
 
-    public CsTypeParameterDeclaration(string name) : base(container: null, name)
+    public sealed override EquatableArray<CsTypeParameterDeclaration> GenericTypeParams => EquatableArray<CsTypeParameterDeclaration>.Empty;
+
+    public CsTypeParameterDeclaration(string name, CsGenericTypeConstraints where) : base(container: null, name)
     {
+        Where = where;
     }
 
-    private CsTypeParameterDeclaration(ITypeContainer? container, string name) : base(container: null, name)
+    public CsTypeParameterDeclaration(string name, out Action<CsGenericTypeConstraints> complete)
+        : base(name, out var baseComplete)
     {
+        Where = null!;
+
+        complete = (where) =>
+        {
+            if (SelfConstructionCompleted.IsCompleted)
+                throw new InvalidOperationException();
+
+            Where = where;
+
+            var constructionFullCompleteFactors = Where.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor);
+
+            baseComplete(null, constructionFullCompleteFactors);
+        };
     }
 
-    protected override CsTypeDeclaration Clone() => new CsTypeParameterDeclaration(Container, Name);
+    private CsTypeParameterDeclaration(ITypeContainer? container, string name, CsGenericTypeConstraints where) : base(container, name)
+    {
+        Where = where;
+    }
+
+    protected override CsTypeDeclaration Clone() => new CsTypeParameterDeclaration(Container, Name, Where);
 
     #region IEquatable
     public override bool Equals(object? obj) => obj is CsTypeParameterDeclaration other && Equals(other);

@@ -525,24 +525,24 @@ internal class SourceBuilder : IDisposable
         _currentIndentCount--;
     }
 
-    private void AppendGenericConstraintsLines(EquatableArray<CsGenericTypeParam> genericTypeParams)
+    private void AppendGenericConstraintsLines(EquatableArray<CsTypeParameterDeclaration> genericTypeParams)
     {
         if (genericTypeParams.IsDefaultOrEmpty)
             return;
 
-        if (!genericTypeParams.Values.Any(v => v.Where.HasValue && !v.Where.Value.IsAny))
+        if (!genericTypeParams.Values.Any(v => !v.Where.IsAny))
             return;
 
         using (BeginIndent())
         {
-            foreach (var genericTypeParam in genericTypeParams.Values.Where(v => v.Where.HasValue && !v.Where.Value.IsAny))
+            foreach (var genericTypeParam in genericTypeParams.Values.Where(v => !v.Where.IsAny))
             {
                 PutIndentSpace();
                 Append("where ");
                 Append(genericTypeParam.Name);
                 Append(" : ");
 
-                var constraints = genericTypeParam.Where!.Value;
+                var constraints = genericTypeParam.Where;
 
                 bool existsLeadingConstraint = false;
 

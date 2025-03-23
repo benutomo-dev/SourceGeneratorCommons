@@ -22,9 +22,9 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
 
     public virtual bool IsReferenceType => !IsValueType;
 
-    public abstract bool IsGenericType { get; }
+    public abstract int Arity { get; }
 
-    public abstract EquatableArray<CsGenericTypeParam> GenericTypeParams { get; }
+    public abstract EquatableArray<CsTypeParameterDeclaration> GenericTypeParams { get; }
 
     public virtual bool CanInherit => false;
 

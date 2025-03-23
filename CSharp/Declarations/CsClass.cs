@@ -16,7 +16,7 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
 
     public CsClassModifier ClassModifier {get;}
 
-    public CsClass(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsTypeRef? baseType = null, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, CsClassModifier classModifier = CsClassModifier.Default)
+    public CsClass(ITypeContainer? container, string name, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, CsTypeRef? baseType = null, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, CsClassModifier classModifier = CsClassModifier.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
         BaseType = baseType;
@@ -24,8 +24,8 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
     }
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    public CsClass(string name, CsAccessibility accessibility, CsClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>> complete)
-        : base(name, accessibility, out var baseComplete)
+    public CsClass(string name, int arity, CsAccessibility accessibility, CsClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, CsTypeRef?, EquatableArray<CsTypeRef>> complete)
+        : base(name, arity, accessibility, out var baseComplete)
     {
         ClassModifier = classModifier;
 

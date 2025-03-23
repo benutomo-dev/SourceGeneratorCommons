@@ -15,7 +15,7 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
 
     public EquatableArray<CsMethodParam> MethodParams { get; private set; }
 
-    public CsDelegate(ITypeContainer? container, string name, CsTypeRefWithAnnotation returnType, CsReturnModifier returnModifier = CsReturnModifier.Default, EquatableArray<CsMethodParam> methodParams = default, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsDelegate(ITypeContainer? container, string name, CsTypeRefWithAnnotation returnType, CsReturnModifier returnModifier = CsReturnModifier.Default, EquatableArray<CsMethodParam> methodParams = default, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, genericTypeParams, accessibility)
     {
         ReturnType = returnType;
@@ -23,8 +23,8 @@ internal sealed class CsDelegate : CsGenericDefinableTypeDeclaration, IEquatable
         MethodParams = methodParams.IsDefaultOrEmpty ? EquatableArray<CsMethodParam>.Empty : methodParams;
     }
 
-    public CsDelegate(string name, CsAccessibility accessibility, CsReturnModifier returnModifier, out Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>> complete)
-        : base(name, accessibility, out var baseComplete)
+    public CsDelegate(string name, int arity, CsAccessibility accessibility, CsReturnModifier returnModifier, out Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsTypeParameterDeclaration>> complete)
+        : base(name, arity, accessibility, out var baseComplete)
     {
         complete = (container, returnType, methodParams, genericTypeParams) =>
         {

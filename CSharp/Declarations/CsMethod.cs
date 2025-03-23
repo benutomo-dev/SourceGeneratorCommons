@@ -14,7 +14,7 @@ record class CsMethod(
     bool IsAsync = false,
     bool IsReadOnly = false,
     EquatableArray<CsMethodParam> Params = default,
-    EquatableArray<CsGenericTypeParam> GenericTypeParams = default,
+    EquatableArray<CsTypeParameterDeclaration> GenericTypeParams = default,
     CsAccessibility Accessibility = CsAccessibility.Default,
     CsMethodModifier MethodModifier = CsMethodModifier.Default
     )

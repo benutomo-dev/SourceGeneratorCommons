@@ -13,15 +13,15 @@ sealed class CsStruct : CsInterfaceInplementableTypeDeclaration, IEquatable<CsSt
 
     public bool IsRef { get; }
 
-    public CsStruct(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, bool isReadOnly = false, bool isRef = false)
+    public CsStruct(ITypeContainer? container, string name, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, bool isReadOnly = false, bool isRef = false)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
         IsReadOnly = isReadOnly;
         IsRef = isRef;
     }
 
-    public CsStruct(string name, CsAccessibility accessibility, bool isReadOnly, bool isRef, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>> complete)
-        : base(name, accessibility, out var baseComplete)
+    public CsStruct(string name, int arity, CsAccessibility accessibility, bool isReadOnly, bool isRef, out Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>> complete)
+        : base(name, arity, accessibility, out var baseComplete)
     {
         IsReadOnly = isReadOnly;
         IsRef = isRef;

@@ -4,8 +4,6 @@
 using System.Collections;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-
 namespace SourceGeneratorCommons.Collections.Generic;
 
 #pragma warning disable CA1711

@@ -3,42 +3,45 @@
 #endif
 using SourceGeneratorCommons.Collections.Generic;
 using SourceGeneratorCommons.CSharp.Declarations.Internals;
+using System;
 
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaration, IEquatable<CsGenericDefinableTypeDeclaration>
 {
-    public sealed override bool IsGenericType => GenericTypeParams.Length > 0;
+    public sealed override int Arity { get; }
 
-    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => _genericTypeParams;
+    public sealed override EquatableArray<CsTypeParameterDeclaration> GenericTypeParams => _genericTypeParams;
 
-    private EquatableArray<CsGenericTypeParam> _genericTypeParams;
+    private EquatableArray<CsTypeParameterDeclaration> _genericTypeParams;
 
-    public CsGenericDefinableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsGenericDefinableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, accessibility)
     {
-        _genericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsGenericTypeParam>.Empty : genericTypeParams;
+        _genericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsTypeParameterDeclaration>.Empty : genericTypeParams;
+        Arity = _genericTypeParams.Length;
     }
 
-    public CsGenericDefinableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
+    public CsGenericDefinableTypeDeclaration(string name, int arity, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
         : base(name, accessibility, out var baseComplete)
     {
+        Arity = arity;
         complete = (container, genericTypeParams, constructionFullCompleteFactors) =>
         {
             if (SelfConstructionCompleted.IsCompleted)
                 throw new InvalidOperationException();
 
-            _genericTypeParams = genericTypeParams;
+            _genericTypeParams = genericTypeParams.IsDefaultOrEmpty ? EquatableArray<CsTypeParameterDeclaration>.Empty : genericTypeParams;
 
-            foreach (var genericTypeParam in genericTypeParams.Values)
+            if (_genericTypeParams.Length != Arity)
+                throw new InvalidOperationException();
+
+            if (!genericTypeParams.IsDefaultOrEmpty)
             {
-                if (genericTypeParam.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor) is { } factors)
-                {
-                    if (constructionFullCompleteFactors is null)
-                        constructionFullCompleteFactors = factors;
-                    else
-                        constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(factors);
-                }
+                if (constructionFullCompleteFactors is null)
+                    constructionFullCompleteFactors = genericTypeParams.Values;
+                else
+                    constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(genericTypeParams.Values);
             }
 
             baseComplete(container, constructionFullCompleteFactors);
@@ -56,7 +59,7 @@ abstract class CsGenericDefinableTypeDeclaration : CsUserDefinableTypeDeclaratio
         if (!base.Equals(other))
             return false;
 
-        if (!EqualityComparer<EquatableArray<CsGenericTypeParam>>.Default.Equals(GenericTypeParams, other.GenericTypeParams))
+        if (!EqualityComparer<EquatableArray<CsTypeParameterDeclaration>>.Default.Equals(GenericTypeParams, other.GenericTypeParams))
             return false;
 
         return true;

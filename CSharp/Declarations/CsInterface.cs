@@ -11,15 +11,15 @@ sealed class CsInterface : CsInterfaceInplementableTypeDeclaration, IEquatable<C
 
     public sealed override bool CanInherit => true;
 
-    public CsInterface(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsInterface(ITypeContainer? container, string name, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
 
     }
 
 
-    public CsInterface(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>> complete)
-        : base(name, accessibility, out var baseComplete)
+    public CsInterface(string name, int arity, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>> complete)
+        : base(name, arity, accessibility, out var baseComplete)
     {
         complete = (container, genericTypeParams, interfaces) =>
         {

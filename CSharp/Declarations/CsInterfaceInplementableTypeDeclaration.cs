@@ -10,14 +10,14 @@ internal abstract class CsInterfaceInplementableTypeDeclaration : CsGenericDefin
 {
     public EquatableArray<CsTypeRef> Interfaces { get; private set; }
 
-    public CsInterfaceInplementableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsInterfaceInplementableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsTypeParameterDeclaration> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, genericTypeParams, accessibility)
     {
         Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeRef>.Empty : interfaces;
     }
 
-    public CsInterfaceInplementableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
-        : base(name, accessibility, out var baseComplete)
+    public CsInterfaceInplementableTypeDeclaration(string name, int arity, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsTypeParameterDeclaration>, EquatableArray<CsTypeRef>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
+        : base(name, arity, accessibility, out var baseComplete)
     {
         complete = (container, genericTypeParams, interfaces, constructionFullCompleteFactors) =>
         {
@@ -26,15 +26,12 @@ internal abstract class CsInterfaceInplementableTypeDeclaration : CsGenericDefin
 
             Interfaces = interfaces;
 
-            foreach (var genericTypeParam in genericTypeParams.Values)
+            if (!genericTypeParams.IsDefaultOrEmpty)
             {
-                if (genericTypeParam.GetConstructionFullCompleteFactors(RejectAlreadyCompletedFactor) is { } factors)
-                {
-                    if (constructionFullCompleteFactors is null)
-                        constructionFullCompleteFactors = factors;
-                    else
-                        constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(factors);
-                }
+                if (constructionFullCompleteFactors is null)
+                    constructionFullCompleteFactors = genericTypeParams.Values;
+                else
+                    constructionFullCompleteFactors = constructionFullCompleteFactors.Concat(genericTypeParams.Values);
             }
 
             foreach (var interfaceItem in interfaces.Values)

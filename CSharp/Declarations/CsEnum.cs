@@ -9,9 +9,9 @@ sealed class CsEnum : CsUserDefinableTypeDeclaration, IEquatable<CsEnum>
 {
     public sealed override bool IsValueType => true;
 
-    public sealed override bool IsGenericType => false;
+    public sealed override int Arity => 0;
 
-    public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
+    public sealed override EquatableArray<CsTypeParameterDeclaration> GenericTypeParams => EquatableArray<CsTypeParameterDeclaration>.Empty;
 
     public CsEnumUnderlyingType UnderlyingType { get; }
 

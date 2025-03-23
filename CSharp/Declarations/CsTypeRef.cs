@@ -46,6 +46,12 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
     private string? _nullableGlobalReference;
     private string? _nullableInternalReference;
 
+    internal static EquatableArray<EquatableArray<CsTypeRefWithAnnotation>>[] s_nonGenericNonNestedTypeArgs = [
+        EquatableArray.Create(EquatableArray<CsTypeRefWithAnnotation>.Empty),
+        EquatableArray.Create(EquatableArray<CsTypeRefWithAnnotation>.Empty, EquatableArray<CsTypeRefWithAnnotation>.Empty),
+        EquatableArray.Create(EquatableArray<CsTypeRefWithAnnotation>.Empty, EquatableArray<CsTypeRefWithAnnotation>.Empty, EquatableArray<CsTypeRefWithAnnotation>.Empty),
+        ];
+
     private ImmutableArray<string> EqualsSignature
     {
         get
@@ -111,12 +117,7 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
 
     private ImmutableArray<string> _equalsSignature;
 
-    public CsTypeRef(CsTypeDeclaration typeDefinition)
-        : this(typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>>.Empty)
-    {
-    }
-
-    public CsTypeRef(CsTypeDeclaration typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
+    private CsTypeRef(CsTypeDeclaration typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
         TypeDefinition = typeDefinition ?? throw new ArgumentNullException(nameof(typeDefinition));
         TypeArgs = typeArgs;
@@ -134,6 +135,67 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
             ConstructionFullCompleted = Task.WhenAll(factors.Select(v => v.SelfConstructionCompleted));
         else
             ConstructionFullCompleted = Task.CompletedTask;
+    }
+
+    public static CsTypeRef CreateFrom(CsTypeDeclaration typeDeclaration)
+    {
+        int nonGenericNestCount = 0;
+        int typeArgsOuterLength = 0;
+        count(ref nonGenericNestCount, ref typeArgsOuterLength, typeDeclaration);
+
+        DebugSGen.Assert(nonGenericNestCount != 0);
+        DebugSGen.Assert(typeArgsOuterLength > 0);
+
+        if (nonGenericNestCount > 0 && nonGenericNestCount <= s_nonGenericNonNestedTypeArgs.Length)
+            return new CsTypeRef(typeDeclaration, s_nonGenericNonNestedTypeArgs[nonGenericNestCount - 1]);
+
+        var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(typeArgsOuterLength);
+        fillTypeArgs(typeArgsBuilder, typeDeclaration);
+        var typeArgs = typeArgsBuilder.MoveToImmutable();
+
+        return new CsTypeRef(
+            typeDeclaration,
+            typeArgs);
+
+        static void count(ref int nonGenericNestCount, ref int typeArgsOuterLength, CsTypeDeclaration typeDeclaration)
+        {
+            typeArgsOuterLength++;
+
+            if (typeDeclaration.Arity > 0)
+            {
+                nonGenericNestCount = -1;
+            }
+            else
+            {
+                if (nonGenericNestCount >= 0)
+                    nonGenericNestCount++;
+            }
+
+            var typeContainer = typeDeclaration.Container as CsTypeDeclaration;
+
+            if (typeContainer is not null)
+                count(ref nonGenericNestCount, ref typeArgsOuterLength, typeContainer);
+            else
+                return;
+        }
+
+        static void fillTypeArgs(ImmutableArray<EquatableArray<CsTypeRefWithAnnotation>>.Builder typeArgsBuilder, CsTypeDeclaration typeDeclaration)
+        {
+            if (typeDeclaration.Container is CsTypeDeclaration typeContainer)
+                fillTypeArgs(typeArgsBuilder, typeContainer);
+
+            typeDeclaration.GenericTypeParams.Values.Select(v => new CsTypeRef(v, s_nonGenericNonNestedTypeArgs[0]));
+
+            if (typeDeclaration.Arity > 0)
+                typeArgsBuilder.Add(typeDeclaration.GenericTypeParams.Values.Select(v => CreateFrom(v).WithAnnotation(isNullableIfRefereceType: false)).ToImmutableArray());
+            else
+                typeArgsBuilder.Add(EquatableArray<CsTypeRefWithAnnotation>.Empty);
+        }
+    }
+
+    internal static CsTypeRef UsafeCreateFrom(CsTypeDeclaration typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
+    {
+        return new CsTypeRef(typeDefinition, typeArgs);
     }
 
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)
@@ -183,7 +245,7 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
 
     static void ValidateRecursiveTypeArgsArity(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
-        if (typeDeclaration.IsGenericType)
+        if (typeDeclaration.Arity > 0)
         {
             if (typeArgs.Length == 0)
                 throw new ArgumentException($"{typeDeclaration.Name}に対応する型引数の数が一致しません。", nameof(typeArgs));
