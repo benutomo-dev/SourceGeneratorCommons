@@ -11,9 +11,9 @@ internal record struct CsGenericTypeConstraints(
 
     bool HaveDefaultConstructor = false,
 
-    CsTypeReference? BaseType = null,
+    CsTypeRef? BaseType = null,
 
-    EquatableArray<CsTypeReference> Interfaces = default
+    EquatableArray<CsTypeRef> Interfaces = default
 
 #if CODE_ANALYSYS4_12_2_OR_GREATER
     , bool AllowRefStruct = false

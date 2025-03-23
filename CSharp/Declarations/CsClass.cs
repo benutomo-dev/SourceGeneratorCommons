@@ -12,11 +12,11 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
 
     public sealed override bool CanInherit => ClassModifier is not (CsClassModifier.Sealed or CsClassModifier.Static);
 
-    public CsTypeReference? BaseType { get; private set; }
+    public CsTypeRef? BaseType { get; private set; }
 
     public CsClassModifier ClassModifier {get;}
 
-    public CsClass(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsTypeReference? baseType = null, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, CsClassModifier classModifier = CsClassModifier.Default)
+    public CsClass(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, CsTypeRef? baseType = null, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default, CsClassModifier classModifier = CsClassModifier.Default)
         :base(container, name, genericTypeParams, interfaces, accessibility)
     {
         BaseType = baseType;
@@ -24,7 +24,7 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
     }
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    public CsClass(string name, CsAccessibility accessibility, CsClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>> complete)
+    public CsClass(string name, CsAccessibility accessibility, CsClassModifier classModifier, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>> complete)
         : base(name, accessibility, out var baseComplete)
     {
         ClassModifier = classModifier;
@@ -63,7 +63,7 @@ sealed class CsClass : CsInterfaceInplementableTypeDeclaration, IEquatable<CsCla
         if (ClassModifier != other.ClassModifier)
             return false;
 
-        if (!EqualityComparer<CsTypeReference?>.Default.Equals(BaseType, other.BaseType))
+        if (!EqualityComparer<CsTypeRef?>.Default.Equals(BaseType, other.BaseType))
             return false;
 
         return true;

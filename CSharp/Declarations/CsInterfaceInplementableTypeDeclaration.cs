@@ -8,15 +8,15 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 internal abstract class CsInterfaceInplementableTypeDeclaration : CsGenericDefinableTypeDeclaration, IEquatable<CsInterfaceInplementableTypeDeclaration>
 {
-    public EquatableArray<CsTypeReference> Interfaces { get; private set; }
+    public EquatableArray<CsTypeRef> Interfaces { get; private set; }
 
-    public CsInterfaceInplementableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeReference> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
+    public CsInterfaceInplementableTypeDeclaration(ITypeContainer? container, string name, EquatableArray<CsGenericTypeParam> genericTypeParams = default, EquatableArray<CsTypeRef> interfaces = default, CsAccessibility accessibility = CsAccessibility.Default)
         : base(container, name, genericTypeParams, accessibility)
     {
-        Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeReference>.Empty : interfaces;
+        Interfaces = interfaces.IsDefaultOrEmpty ? EquatableArray<CsTypeRef>.Empty : interfaces;
     }
 
-    public CsInterfaceInplementableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
+    public CsInterfaceInplementableTypeDeclaration(string name, CsAccessibility accessibility, out Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>, IEnumerable<IConstructionFullCompleteFactor>?> complete)
         : base(name, accessibility, out var baseComplete)
     {
         complete = (container, genericTypeParams, interfaces, constructionFullCompleteFactors) =>
@@ -63,7 +63,7 @@ internal abstract class CsInterfaceInplementableTypeDeclaration : CsGenericDefin
         if (!base.Equals(other))
             return false;
 
-        if (!EqualityComparer<EquatableArray<CsTypeReference>>.Default.Equals(Interfaces, other.Interfaces))
+        if (!EqualityComparer<EquatableArray<CsTypeRef>>.Default.Equals(Interfaces, other.Interfaces))
             return false;
 
         return true;

@@ -7,7 +7,7 @@ using SourceGeneratorCommons.CSharp.Declarations.Internals;
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record class CsMethodParam(
-    CsTypeRefWithNullability Type,
+    CsTypeRefWithAnnotation Type,
     string Name,
     CsParamModifier Modifier = CsParamModifier.Default,
     bool IsScoped = false,

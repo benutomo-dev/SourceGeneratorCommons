@@ -6,7 +6,7 @@ using SourceGeneratorCommons.Collections.Generic;
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record class CsMethodParamWithDefaultValue(
-    CsTypeRefWithNullability Type,
+    CsTypeRefWithAnnotation Type,
     string Name,
     object? DefaultValue,
     CsParamModifier Modifier = CsParamModifier.Default,

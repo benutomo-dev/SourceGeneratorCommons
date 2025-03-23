@@ -10,9 +10,9 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 /// <summary>
 /// null許容性付き型参照
 /// </summary>
-internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>, ILazyConstructionOwner
+internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, ILazyConstructionOwner
 {
-    public CsTypeReference Type { get; }
+    public CsTypeRef Type { get; }
 
     /// <summary>
     /// 参照型に対するnull許容性。trueの場合、参照型を文字列で表現した場合に`object?`のように末尾に?が付くようになる。
@@ -70,14 +70,14 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
 
 
     /// <summary>
-    /// <see cref="CsTypeRefWithNullability"/>のコンストラクタ。
+    /// <see cref="CsTypeRefWithAnnotation"/>のコンストラクタ。
     /// </summary>
     /// <param name="type">型</param>
     /// <param name="isNullableIfRefereceType">
     /// 参照型に対するnull許容性。trueの場合、参照型を文字列で表現した場合に`object?`のように末尾に?が付くようになる。
     /// 値型に対してこのパラメータの設定は無効。値型の<see cref="IsNullable"/>は常に<see langword="false"/>となる。
     /// </param>
-    public CsTypeRefWithNullability(CsTypeReference type, bool isNullableIfRefereceType)
+    public CsTypeRefWithAnnotation(CsTypeRef type, bool isNullableIfRefereceType)
     {
         Type = type;
 
@@ -89,31 +89,31 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
     /// <remarks>
     /// このメソッドではTなどの型パラメータは元の型制約に関係なく常に参照型とみなす扱いとなる。
     /// </remarks>
-    public CsTypeRefWithNullability ToNullableIfReferenceType()
+    public CsTypeRefWithAnnotation ToNullableIfReferenceType()
     {
-        return new CsTypeRefWithNullability(Type, isNullableIfRefereceType: true);
+        return new CsTypeRefWithAnnotation(Type, isNullableIfRefereceType: true);
     }
 
-    public CsTypeRefWithNullability ToDisnullable()
+    public CsTypeRefWithAnnotation ToDisnullable()
     {
-        return new CsTypeRefWithNullability(Type, isNullableIfRefereceType: false);
+        return new CsTypeRefWithAnnotation(Type, isNullableIfRefereceType: false);
     }
 
-    public CsTypeRefWithNullability WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    public CsTypeRefWithAnnotation WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
-        return new CsTypeRefWithNullability(Type.WithTypeArgs(typeArgs), isNullableIfRefereceType: IsNullable);
+        return new CsTypeRefWithAnnotation(Type.WithTypeArgs(typeArgs), isNullableIfRefereceType: IsNullable);
     }
 
-    public CsTypeRefWithNullability WithTypeRedirection(IReadOnlyDictionary<CsTypeReference, CsTypeReference> typeRedirectDictionary)
+    public CsTypeRefWithAnnotation WithTypeRedirection(IReadOnlyDictionary<CsTypeRef, CsTypeRef> typeRedirectDictionary)
     {
         if (typeRedirectDictionary.TryGetValue(Type, out var remapedType))
             return remapedType.WithNullability(IsNullable);
 
-        var remapedTypeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithNullability>>(Type.TypeArgs.Length);
+        var remapedTypeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(Type.TypeArgs.Length);
 
         foreach (var innerTypeArgs in Type.TypeArgs.Values)
         {
-            var remapedInnerTypeArgsBuilder = ImmutableArray.CreateBuilder<CsTypeRefWithNullability>(innerTypeArgs.Length);
+            var remapedInnerTypeArgsBuilder = ImmutableArray.CreateBuilder<CsTypeRefWithAnnotation>(innerTypeArgs.Length);
 
             foreach (var typeArg in innerTypeArgs.Values)
                 remapedInnerTypeArgsBuilder.Add(typeArg.WithTypeRedirection(typeRedirectDictionary));
@@ -136,14 +136,14 @@ internal struct CsTypeRefWithNullability : IEquatable<CsTypeRefWithNullability>,
         return Type.GetConstructionFullCompleteFactors(rejectAlreadyCompletedFactor);
     }
 
-    public override bool Equals(object? obj) => obj is CsTypeRefWithNullability other && this.Equals(other);
+    public override bool Equals(object? obj) => obj is CsTypeRefWithAnnotation other && this.Equals(other);
 
-    public bool Equals(CsTypeRefWithNullability other)
+    public bool Equals(CsTypeRefWithAnnotation other)
     {
         if (IsNullable != other.IsNullable)
             return false;
 
-        if (!EqualityComparer< CsTypeReference>.Default.Equals(Type, other.Type))
+        if (!EqualityComparer< CsTypeRef>.Default.Equals(Type, other.Type))
             return false;
 
         return true;

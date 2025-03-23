@@ -8,7 +8,7 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record class CsMethod(
     string Name,
-    CsTypeRefWithNullability ReturnType,
+    CsTypeRefWithAnnotation ReturnType,
     CsReturnModifier ReturnModifier = CsReturnModifier.Default,
     bool IsStatic = false,
     bool IsAsync = false,

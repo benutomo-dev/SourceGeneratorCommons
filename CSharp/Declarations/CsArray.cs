@@ -13,17 +13,17 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
 
     public sealed override EquatableArray<CsGenericTypeParam> GenericTypeParams => EquatableArray<CsGenericTypeParam>.Empty;
 
-    public CsTypeRefWithNullability ElementType { get; private set; }
+    public CsTypeRefWithAnnotation ElementType { get; private set; }
 
     public int Rank { get; }
 
-    public CsArray(ITypeContainer? typeContainer, string name, CsTypeRefWithNullability elementType, int rank = 1) : base(typeContainer, name)
+    public CsArray(ITypeContainer? typeContainer, string name, CsTypeRefWithAnnotation elementType, int rank = 1) : base(typeContainer, name)
     {
         Rank = rank;
         ElementType = elementType;
     }
 
-    public CsArray(string name, int rank, out Action<ITypeContainer?, CsTypeRefWithNullability> complete) : base(name, out var baseComplete)
+    public CsArray(string name, int rank, out Action<ITypeContainer?, CsTypeRefWithAnnotation> complete) : base(name, out var baseComplete)
     {
         Rank = rank;
         ElementType = default!;
@@ -58,7 +58,7 @@ sealed class CsArray : CsTypeDeclaration, IEquatable<CsArray>
         if (Rank != other.Rank)
             return false;
 
-        if (!EqualityComparer<CsTypeRefWithNullability>.Default.Equals(ElementType, other.ElementType))
+        if (!EqualityComparer<CsTypeRefWithAnnotation>.Default.Equals(ElementType, other.ElementType))
             return false;
 
 

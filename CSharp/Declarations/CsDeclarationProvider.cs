@@ -26,51 +26,51 @@ internal class CsDeclarationProvider
 
     private HashTable<ITypeSymbol, CsTypeDeclaration> _typeDeclarationDictionary;
 
-    private HashTable<CsTypeDeclaration, CsTypeReference> _typeReferenceDictionary;
+    private HashTable<CsTypeDeclaration, CsTypeRef> _typeReferenceDictionary;
 
     public SpecialTypes _specialType;
 
 
     public struct SpecialTypes
     {
-        public CsTypeReference Object => _object ?? _provider.GetTypeReferenceByMetadataName("System.Object").ToNotNullWithAssert();
-        public CsTypeReference String => _string ?? _provider.GetTypeReferenceByMetadataName("System.String").ToNotNullWithAssert();
-        public CsTypeReference Char => _char ?? _provider.GetTypeReferenceByMetadataName("System.Char").ToNotNullWithAssert();
-        public CsTypeReference Byte => _byte ?? _provider.GetTypeReferenceByMetadataName("System.Byte").ToNotNullWithAssert();
-        public CsTypeReference SByte => _sByte ?? _provider.GetTypeReferenceByMetadataName("System.SByte").ToNotNullWithAssert();
-        public CsTypeReference Short => _int16 ?? _provider.GetTypeReferenceByMetadataName("System.Int16").ToNotNullWithAssert();
-        public CsTypeReference Int => _int32 ?? _provider.GetTypeReferenceByMetadataName("System.Int32").ToNotNullWithAssert();
-        public CsTypeReference Long => _int64 ?? _provider.GetTypeReferenceByMetadataName("System.Int64").ToNotNullWithAssert();
-        public CsTypeReference UShort => _uInt16 ?? _provider.GetTypeReferenceByMetadataName("System.UInt16").ToNotNullWithAssert();
-        public CsTypeReference UInt => _uInt32 ?? _provider.GetTypeReferenceByMetadataName("System.UInt32").ToNotNullWithAssert();
-        public CsTypeReference ULong => _uInt64 ?? _provider.GetTypeReferenceByMetadataName("System.UInt64").ToNotNullWithAssert();
-        public CsTypeReference Float => _single ?? _provider.GetTypeReferenceByMetadataName("System.Single").ToNotNullWithAssert();
-        public CsTypeReference Double => _double ?? _provider.GetTypeReferenceByMetadataName("System.Double").ToNotNullWithAssert();
-        public CsTypeReference Decimal => _decimal ?? _provider.GetTypeReferenceByMetadataName("System.Decimal").ToNotNullWithAssert();
-        public CsTypeReference Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid").ToNotNullWithAssert();
-        public CsTypeReference Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type").ToNotNullWithAssert();
-        public CsTypeReference Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute").ToNotNullWithAssert();
-        public CsTypeReference NullableT => _nullableT ?? _provider.GetTypeReferenceByMetadataName("System.Nullable`1").ToNotNullWithAssert();
+        public CsTypeRef Object => _object ?? _provider.GetTypeReferenceByMetadataName("System.Object").ToNotNullWithAssert();
+        public CsTypeRef String => _string ?? _provider.GetTypeReferenceByMetadataName("System.String").ToNotNullWithAssert();
+        public CsTypeRef Char => _char ?? _provider.GetTypeReferenceByMetadataName("System.Char").ToNotNullWithAssert();
+        public CsTypeRef Byte => _byte ?? _provider.GetTypeReferenceByMetadataName("System.Byte").ToNotNullWithAssert();
+        public CsTypeRef SByte => _sByte ?? _provider.GetTypeReferenceByMetadataName("System.SByte").ToNotNullWithAssert();
+        public CsTypeRef Short => _int16 ?? _provider.GetTypeReferenceByMetadataName("System.Int16").ToNotNullWithAssert();
+        public CsTypeRef Int => _int32 ?? _provider.GetTypeReferenceByMetadataName("System.Int32").ToNotNullWithAssert();
+        public CsTypeRef Long => _int64 ?? _provider.GetTypeReferenceByMetadataName("System.Int64").ToNotNullWithAssert();
+        public CsTypeRef UShort => _uInt16 ?? _provider.GetTypeReferenceByMetadataName("System.UInt16").ToNotNullWithAssert();
+        public CsTypeRef UInt => _uInt32 ?? _provider.GetTypeReferenceByMetadataName("System.UInt32").ToNotNullWithAssert();
+        public CsTypeRef ULong => _uInt64 ?? _provider.GetTypeReferenceByMetadataName("System.UInt64").ToNotNullWithAssert();
+        public CsTypeRef Float => _single ?? _provider.GetTypeReferenceByMetadataName("System.Single").ToNotNullWithAssert();
+        public CsTypeRef Double => _double ?? _provider.GetTypeReferenceByMetadataName("System.Double").ToNotNullWithAssert();
+        public CsTypeRef Decimal => _decimal ?? _provider.GetTypeReferenceByMetadataName("System.Decimal").ToNotNullWithAssert();
+        public CsTypeRef Guid => _guid ?? _provider.GetTypeReferenceByMetadataName("System.Guid").ToNotNullWithAssert();
+        public CsTypeRef Type => _type ?? _provider.GetTypeReferenceByMetadataName("System.Type").ToNotNullWithAssert();
+        public CsTypeRef Attribute => _attribute ?? _provider.GetTypeReferenceByMetadataName("System.Attribute").ToNotNullWithAssert();
+        public CsTypeRef NullableT => _nullableT ?? _provider.GetTypeReferenceByMetadataName("System.Nullable`1").ToNotNullWithAssert();
 
         private CsDeclarationProvider _provider;
-        private CsTypeReference? _type;
-        private CsTypeReference? _guid;
-        private CsTypeReference? _decimal;
-        private CsTypeReference? _double;
-        private CsTypeReference? _single;
-        private CsTypeReference? _uInt64;
-        private CsTypeReference? _uInt32;
-        private CsTypeReference? _uInt16;
-        private CsTypeReference? _int64;
-        private CsTypeReference? _int32;
-        private CsTypeReference? _int16;
-        private CsTypeReference? _sByte;
-        private CsTypeReference? _byte;
-        private CsTypeReference? _char;
-        private CsTypeReference? _string;
-        private CsTypeReference? _object;
-        private CsTypeReference? _attribute;
-        private CsTypeReference? _nullableT;
+        private CsTypeRef? _type;
+        private CsTypeRef? _guid;
+        private CsTypeRef? _decimal;
+        private CsTypeRef? _double;
+        private CsTypeRef? _single;
+        private CsTypeRef? _uInt64;
+        private CsTypeRef? _uInt32;
+        private CsTypeRef? _uInt16;
+        private CsTypeRef? _int64;
+        private CsTypeRef? _int32;
+        private CsTypeRef? _int16;
+        private CsTypeRef? _sByte;
+        private CsTypeRef? _byte;
+        private CsTypeRef? _char;
+        private CsTypeRef? _string;
+        private CsTypeRef? _object;
+        private CsTypeRef? _attribute;
+        private CsTypeRef? _nullableT;
 
         public SpecialTypes(CsDeclarationProvider provider) => _provider = provider;
     }
@@ -85,7 +85,7 @@ internal class CsDeclarationProvider
 
         _typeDeclarationDictionary = new HashTable<ITypeSymbol, CsTypeDeclaration>(lockObj, SymbolEqualityComparer.Default);
 
-        _typeReferenceDictionary = new HashTable<CsTypeDeclaration, CsTypeReference>(lockObj, ReferenceEqualityComparer<CsTypeDeclaration>.Default);
+        _typeReferenceDictionary = new HashTable<CsTypeDeclaration, CsTypeRef>(lockObj, ReferenceEqualityComparer<CsTypeDeclaration>.Default);
 
         _specialType = new SpecialTypes(this);
     }
@@ -102,7 +102,7 @@ internal class CsDeclarationProvider
         return typeDeclaration;
     }
 
-    internal CsTypeRefWithNullability GetTypeReference(ITypeSymbol typeSymbol)
+    internal CsTypeRefWithAnnotation GetTypeReference(ITypeSymbol typeSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
@@ -114,7 +114,7 @@ internal class CsDeclarationProvider
         return typeReference;
     }
 
-    internal CsTypeReference? GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
+    internal CsTypeRef? GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
     {
         var typeSymbol = Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
 
@@ -124,12 +124,12 @@ internal class CsDeclarationProvider
         return GetTypeReference(typeSymbol).Type;
     }
 
-    internal CsTypeRefWithNullability MakeNullableTypeReference(CsTypeRefWithNullability typeReference)
+    internal CsTypeRefWithAnnotation MakeNullableTypeReference(CsTypeRefWithAnnotation typeReference)
     {
         return MakeNullableTypeReference(typeReference.Type);
     }
 
-    internal CsTypeRefWithNullability MakeNullableTypeReference(CsTypeReference typeReference)
+    internal CsTypeRefWithAnnotation MakeNullableTypeReference(CsTypeRef typeReference)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
 
@@ -176,7 +176,7 @@ internal class CsDeclarationProvider
         return CreateAndCacheTypeDeclaration(typeSymbol, nest);
     }
 
-    private CsTypeRefWithNullability GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, int nest)
+    private CsTypeRefWithAnnotation GetTypeReferenceFromCachedTypeReferenceFirst(ITypeSymbol typeSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -286,10 +286,10 @@ internal class CsDeclarationProvider
 
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
-            Action<ITypeContainer?, CsTypeRefWithNullability>? completeArrayDeclaration = null;
+            Action<ITypeContainer?, CsTypeRefWithAnnotation>? completeArrayDeclaration = null;
 
             var arrayDeclaration = _typeDeclarationDictionary.GetOrAdd(arrayTypeSymbol, ref completeArrayDeclaration,
-                static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithNullability>? completeArrayDeclaration) =>
+                static (IArrayTypeSymbol arrayTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithAnnotation>? completeArrayDeclaration) =>
                 {
                     return new CsArray(GetNameWithInternIfSystem(arrayTypeSymbol), arrayTypeSymbol.Rank, out completeArrayDeclaration);
                 },
@@ -353,10 +353,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Class)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration = null;
 
                 var classDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeClassDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeReference?, EquatableArray<CsTypeReference>>? completeClassDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, CsTypeRef?, EquatableArray<CsTypeRef>>? completeClassDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -401,10 +401,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Interface)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration = null;
 
                 var interfaceDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeInterfaceDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeInterfaceDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeInterfaceDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -435,10 +435,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Struct)
             {
-                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration = null;
+                Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeStructDeclaration = null;
 
                 var structDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeStructDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeReference>>? completeStructDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, EquatableArray<CsGenericTypeParam>, EquatableArray<CsTypeRef>>? completeStructDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -472,10 +472,10 @@ internal class CsDeclarationProvider
 
             if (namedTypeSymbol.TypeKind == TypeKind.Delegate)
             {
-                Action<ITypeContainer?, CsTypeRefWithNullability, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeDelegateDeclaration = null;
+                Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeDelegateDeclaration = null;
 
                 var delegateDeclaration = _typeDeclarationDictionary.GetOrAdd(namedTypeSymbol, ref completeDelegateDeclaration,
-                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithNullability, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeInterfaceDeclaration) =>
+                    static (INamedTypeSymbol namedTypeSymbol, ref Action<ITypeContainer?, CsTypeRefWithAnnotation, EquatableArray<CsMethodParam>, EquatableArray<CsGenericTypeParam>>? completeInterfaceDeclaration) =>
                     {
                         var accessibility = namedTypeSymbol.DeclaredAccessibility.ToCSharpAccessibility();
 
@@ -529,7 +529,7 @@ internal class CsDeclarationProvider
         throw new NotSupportedException();
     }
 
-    private CsTypeReference CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol, int nest)
+    private CsTypeRef CreateAndCacheTypeReference(CsTypeDeclaration csTypeDeclaration, ITypeSymbol typeSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
@@ -543,19 +543,19 @@ internal class CsDeclarationProvider
                     if (createArg.typeSymbol is not INamedTypeSymbol namedTypeSymbol)
                         throw new InvalidOperationException();
 
-                    var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithNullability>>(countTypeArgsLength(namedTypeSymbol));
+                    var typeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(countTypeArgsLength(namedTypeSymbol));
                     fillTypeArgs(createArg.self, typeArgsBuilder, namedTypeSymbol);
                     var typeArgs = typeArgsBuilder.MoveToImmutable();
 
-                    return new CsTypeReference(
+                    return new CsTypeRef(
                         createArg.csTypeDeclaration,
                         typeArgs);
                 }
                 else
                 {
-                    return new CsTypeReference(
+                    return new CsTypeRef(
                         createArg.csTypeDeclaration,
-                        EquatableArray<EquatableArray<CsTypeRefWithNullability>>.Empty
+                        EquatableArray<EquatableArray<CsTypeRefWithAnnotation>>.Empty
                         );
                 }
             }, out _);
@@ -570,7 +570,7 @@ internal class CsDeclarationProvider
                 return 1;
         }
 
-        static void fillTypeArgs(CsDeclarationProvider self, ImmutableArray<EquatableArray<CsTypeRefWithNullability>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
+        static void fillTypeArgs(CsDeclarationProvider self, ImmutableArray<EquatableArray<CsTypeRefWithAnnotation>>.Builder typeArgsBuilder, INamedTypeSymbol namedTypeSymbol)
         {
             if (namedTypeSymbol.ContainingType is not null)
                 fillTypeArgs(self, typeArgsBuilder, namedTypeSymbol.ContainingType);
@@ -717,7 +717,7 @@ internal class CsDeclarationProvider
         return genericTypeParams;
     }
 
-    private EquatableArray<CsTypeReference> BuildInterfaces(INamedTypeSymbol namedTypeSymbol, int nest)
+    private EquatableArray<CsTypeRef> BuildInterfaces(INamedTypeSymbol namedTypeSymbol, int nest)
     {
         nest++;
         if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");

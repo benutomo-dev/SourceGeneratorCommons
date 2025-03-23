@@ -33,7 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclarationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsErrorType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeParameterDeclaration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeRefWithNullability.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeRefWithAnnotation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsUserDefinableTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\Internals\INullableRefarences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebugSGen.cs" />
@@ -63,7 +63,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.Appender.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\SymbolExtensions.IsAssignableTo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeReference.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeRef.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\TypeSymbolExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsTypeDeclaration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeDefinitionBlockOptions.cs" />

@@ -8,7 +8,7 @@ using System.Text;
 namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record struct CsAttribute(
-    CsTypeReference AttributeType,
+    CsTypeRef AttributeType,
     object?[]? ConstructerArgs = null,
     EquatableDictionary<string, object?>? NamedArgs = null,
     CsAttributeTarget Target = CsAttributeTarget.Default

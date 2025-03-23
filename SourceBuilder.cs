@@ -306,18 +306,18 @@ internal class SourceBuilder : IDisposable
                     if (!options.OmitInterfaces && userDefinableTypeDeclaration is CsClass { Interfaces: { IsDefaultOrEmpty: false } classInheritInterfaces })
                         inheritTypeCount += classInheritInterfaces.Length;
                     else
-                        classInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
+                        classInheritInterfaces = EquatableArray<CsTypeRef>.Empty;
 
                     if (!options.OmitInterfaces && userDefinableTypeDeclaration is CsStruct { Interfaces: { IsDefaultOrEmpty: false } structInheritInterfaces })
                         inheritTypeCount += structInheritInterfaces.Length;
                     else
-                        structInheritInterfaces = EquatableArray<CsTypeReference>.Empty;
+                        structInheritInterfaces = EquatableArray<CsTypeRef>.Empty;
 
                     if (inheritTypeCount > 0)
                     {
                         self.Append(" : ");
 
-                        var inheritTypes = new List<CsTypeReference>(inheritTypeCount);
+                        var inheritTypes = new List<CsTypeRef>(inheritTypeCount);
 
                         if (baseType is not null)
                             inheritTypes.Add(baseType);

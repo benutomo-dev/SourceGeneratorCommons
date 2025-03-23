@@ -12,7 +12,7 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 /// <summary>
 /// 型参照
 /// </summary>
-class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILazyConstructionOwner, INullableRefarences
+class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructionOwner, INullableRefarences
 {
     private enum TypeNameEmitMode
     {
@@ -24,7 +24,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
     public CsTypeDeclaration TypeDefinition { get; }
 
-    public EquatableArray<EquatableArray<CsTypeRefWithNullability>> TypeArgs { get; }
+    public EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> TypeArgs { get; }
 
     public string InternalReference => _internalReference ??= ToString(TypeNameEmitMode.SimpleTypeName);
 
@@ -62,7 +62,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
             return builder.MoveToImmutable();
 
-            static void countLength(CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs, ref int count, out CsNameSpace? nameSpace)
+            static void countLength(CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithAnnotation>> typeArgs, ref int count, out CsNameSpace? nameSpace)
             {
                 count += 1;
 
@@ -84,7 +84,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
                     count++;
             }
 
-            static void fill(ImmutableArray<string>.Builder builder, CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs, out CsNameSpace? nameSpace)
+            static void fill(ImmutableArray<string>.Builder builder, CsTypeDeclaration type, ReadOnlySpan<EquatableArray<CsTypeRefWithAnnotation>> typeArgs, out CsNameSpace? nameSpace)
             {
                 nameSpace = null;
 
@@ -111,12 +111,12 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
     private ImmutableArray<string> _equalsSignature;
 
-    public CsTypeReference(CsTypeDeclaration typeDefinition)
-        : this(typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithNullability>>.Empty)
+    public CsTypeRef(CsTypeDeclaration typeDefinition)
+        : this(typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>>.Empty)
     {
     }
 
-    public CsTypeReference(CsTypeDeclaration typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    public CsTypeRef(CsTypeDeclaration typeDefinition, EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
         TypeDefinition = typeDefinition ?? throw new ArgumentNullException(nameof(typeDefinition));
         TypeArgs = typeArgs;
@@ -161,27 +161,27 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         return factors;
     }
 
-    public CsTypeRefWithNullability WithNullability(bool isNullableIfRefereceType)
+    public CsTypeRefWithAnnotation WithNullability(bool isNullableIfRefereceType)
     {
-        return new CsTypeRefWithNullability(this, isNullableIfRefereceType);
+        return new CsTypeRefWithAnnotation(this, isNullableIfRefereceType);
     }
 
-    public CsTypeReference WithTypeDefinition(CsTypeDeclaration typeDefinition)
+    public CsTypeRef WithTypeDefinition(CsTypeDeclaration typeDefinition)
     {
         ValidateRecursiveTypeArgsArity(typeDefinition, TypeArgs.AsSpan());
 
-        return new CsTypeReference(typeDefinition, TypeArgs);
+        return new CsTypeRef(typeDefinition, TypeArgs);
 
     }
 
-    public CsTypeReference WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    public CsTypeRef WithTypeArgs(EquatableArray<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
         ValidateRecursiveTypeArgsArity(TypeDefinition, typeArgs.AsSpan());
 
-        return new CsTypeReference(TypeDefinition, typeArgs);
+        return new CsTypeRef(TypeDefinition, typeArgs);
     }
 
-    static void ValidateRecursiveTypeArgsArity(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs)
+    static void ValidateRecursiveTypeArgsArity(CsTypeDeclaration typeDeclaration, ReadOnlySpan<EquatableArray<CsTypeRefWithAnnotation>> typeArgs)
     {
         if (typeDeclaration.IsGenericType)
         {
@@ -212,9 +212,9 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
         }
     }
 
-    public override bool Equals(object? obj) => obj is CsTypeReference other && this.Equals(other);
+    public override bool Equals(object? obj) => obj is CsTypeRef other && this.Equals(other);
 
-    public bool Equals(CsTypeReference? other)
+    public bool Equals(CsTypeRef? other)
     {
         if (other is null)
             return false;
@@ -260,7 +260,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
 
         return value;
 
-        void append(StringBuilder builder, CsTypeDeclaration typeDefinition, ReadOnlySpan<EquatableArray<CsTypeRefWithNullability>> typeArgs, TypeNameEmitMode mode)
+        void append(StringBuilder builder, CsTypeDeclaration typeDefinition, ReadOnlySpan<EquatableArray<CsTypeRefWithAnnotation>> typeArgs, TypeNameEmitMode mode)
         {
             if (typeDefinition is CsArray csArray)
             {
@@ -298,7 +298,7 @@ class CsTypeReference : IEquatable<CsTypeReference>, ILazyConstructionRoot, ILaz
                 builder.Append(typeDefinition.Name);
             }
 
-            var currentTypeArgs = typeArgs.Length > 0 ? typeArgs[^1] : EquatableArray<CsTypeRefWithNullability>.Empty;
+            var currentTypeArgs = typeArgs.Length > 0 ? typeArgs[^1] : EquatableArray<CsTypeRefWithAnnotation>.Empty;
 
             if (currentTypeArgs.Length > 0)
             {

@@ -7,7 +7,7 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 record class CsExtensionMethod(
     string Name,
-    CsTypeRefWithNullability ReturnType,
+    CsTypeRefWithAnnotation ReturnType,
     CsReturnModifier ReturnModifier = CsReturnModifier.Default,
     bool IsAsync = false,
     bool IsReadOnly = false,
