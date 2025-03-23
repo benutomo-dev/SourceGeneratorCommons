@@ -28,7 +28,7 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
         {
             if (IsNullable)
             {
-                DebugSGen.Assert(Type.TypeDefinition.IsReferenceType);
+                DebugSGen.Assert(CanSetNullableAnnotation(Type.TypeDefinition));
                 return ((INullableRefarences)Type).NullablePatternInternalReference;
             }
 
@@ -50,7 +50,7 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
         {
             if (IsNullable)
             {
-                DebugSGen.Assert(!Type.TypeDefinition.IsValueType);
+                DebugSGen.Assert(CanSetNullableAnnotation(Type.TypeDefinition));
                 return ((INullableRefarences)Type).NullablePatternGlobalReference;
             }
 
@@ -83,11 +83,16 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
 
         if (isNullableIfRefereceType)
         {
-            // 制約のない型パラメータなどは参照型であると同時に値型ともなる
-            // 参照型になる可能性があればIsNullableの設定が可能と判定する
-            if (type.TypeDefinition.IsReferenceType || !type.TypeDefinition.IsValueType)
+            if (CanSetNullableAnnotation(type.TypeDefinition))
                 IsNullable = true;
         }
+    }
+
+    public static bool CanSetNullableAnnotation(CsTypeDeclaration typeDeclaration)
+    {
+        // 制約のない型パラメータなどは参照型であると同時に値型ともなる
+        // 参照型になる可能性があればIsNullableの設定が可能と判定する
+        return typeDeclaration.IsReferenceType || !typeDeclaration.IsValueType; ;
     }
 
 
