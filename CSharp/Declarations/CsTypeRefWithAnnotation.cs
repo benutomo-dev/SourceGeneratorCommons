@@ -81,8 +81,13 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
     {
         Type = type;
 
-        if (isNullableIfRefereceType && !type.TypeDefinition.IsValueType)
-            IsNullable = true;
+        if (isNullableIfRefereceType)
+        {
+            // 制約のない型パラメータなどは参照型であると同時に値型ともなる
+            // 参照型になる可能性があればIsNullableの設定が可能と判定する
+            if (type.TypeDefinition.IsReferenceType || !type.TypeDefinition.IsValueType)
+                IsNullable = true;
+        }
     }
 
 

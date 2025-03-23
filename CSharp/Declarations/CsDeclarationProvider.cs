@@ -766,22 +766,51 @@ internal class CsDeclarationProvider
                     return false;
             }
 
-            var typeContainer = typeDeclaration.Container as CsTypeDeclaration;
             var symbolTypeContainer = typeSymbol.Kind == SymbolKind.TypeParameter
                 ? null
                 : typeSymbol.ContainingType;
 
-            if (typeContainer is null != symbolTypeContainer is null)
-                return false;
-
-            if (typeContainer is not null)
+            if (((ILazyConstructionRoot)typeDeclaration).ConstructionFullCompleted.IsCompleted)
             {
+                var typeContainer = typeDeclaration.Container as CsTypeDeclaration;
+
+                if (typeContainer is null != symbolTypeContainer is null)
+                    return false;
+
+                if (typeContainer is null)
+                    return true;
+
                 DebugSGen.AssertIsNotNull(typeSymbol);
                 return validate(ref nonGenericNestCount, ref typeArgsOuterLength, typeContainer, symbolTypeContainer!);
             }
             else
             {
+                if (symbolTypeContainer is null)
+                    return true;
+
+                count(ref nonGenericNestCount, ref typeArgsOuterLength, symbolTypeContainer);
                 return true;
+            }
+        }
+
+
+        static void count(ref int nonGenericNestCount, ref int typeArgsOuterLength, INamedTypeSymbol typeSymbol)
+        {
+            while (typeSymbol is not null)
+            {
+                if (typeSymbol.Arity > 0)
+                {
+                    nonGenericNestCount = -1;
+                }
+                else
+                {
+                    if (nonGenericNestCount >= 0)
+                        nonGenericNestCount++;
+                }
+
+                typeSymbol = typeSymbol.Kind == SymbolKind.TypeParameter
+                    ? null
+                    : typeSymbol.ContainingType;
             }
         }
 
