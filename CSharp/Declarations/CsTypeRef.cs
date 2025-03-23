@@ -161,7 +161,7 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
         return factors;
     }
 
-    public CsTypeRefWithAnnotation WithNullability(bool isNullableIfRefereceType)
+    public CsTypeRefWithAnnotation WithAnnotation(bool isNullableIfRefereceType)
     {
         return new CsTypeRefWithAnnotation(this, isNullableIfRefereceType);
     }
@@ -281,16 +281,25 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
                     }
                     else if (typeDefinition.Container is not null)
                     {
-                        var containerValue = (mode, typeDefinition.Container) switch
+                        string containerValue;
+
+                        if (typeDefinition.Container is CsNameSpace nameSpace)
                         {
                             // 名前空間はSourceEmbeddingFullTypeNameの時だけ"global::"付きで出力する
-                            (not TypeNameEmitMode.SourceEmbeddingFullTypeName, CsNameSpace csNameSpace) => csNameSpace.Name,
-                            _ => typeDefinition.Container.FullNameWithNameSpaceAlias,
-                        };
-                        
+
+                            if (mode == TypeNameEmitMode.SourceEmbeddingFullTypeName)
+                                containerValue = typeDefinition.Container.FullNameWithNameSpaceAlias;
+                            else
+                                containerValue = typeDefinition.Container.Name;
+                        }
+                        else
+                        {
+                            containerValue = typeDefinition.Container.FullNameWithNameSpaceAlias;
+                        }
+
                         builder.Append(containerValue);
 
-                        if (!string.IsNullOrWhiteSpace(containerValue))
+                        if (!string.IsNullOrWhiteSpace(containerValue) && containerValue[containerValue.Length - 1] != ':')
                             builder.Append('.');
                     }
                 }

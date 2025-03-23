@@ -107,7 +107,7 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
     public CsTypeRefWithAnnotation WithTypeRedirection(IReadOnlyDictionary<CsTypeRef, CsTypeRef> typeRedirectDictionary)
     {
         if (typeRedirectDictionary.TryGetValue(Type, out var remapedType))
-            return remapedType.WithNullability(IsNullable);
+            return remapedType.WithAnnotation(IsNullable);
 
         var remapedTypeArgsBuilder = ImmutableArray.CreateBuilder<EquatableArray<CsTypeRefWithAnnotation>>(Type.TypeArgs.Length);
 
@@ -128,7 +128,7 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
 
         return Type
             .WithTypeArgs(remapedTypeArgs)
-            .WithNullability(IsNullable);
+            .WithAnnotation(IsNullable);
     }
 
     public IEnumerable<IConstructionFullCompleteFactor>? GetConstructionFullCompleteFactors(bool rejectAlreadyCompletedFactor)

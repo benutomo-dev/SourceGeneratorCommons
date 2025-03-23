@@ -9,6 +9,8 @@ class CsNameSpace : ITypeContainer, IEquatable<CsNameSpace>
 
     public string FullNameWithNameSpaceAlias => $"global::{Name}";
 
+    public bool IsRoot => Name == "";
+
     public bool IsGlobal => Name == "";
 
     public bool IsSystem => Name == "System";

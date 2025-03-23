@@ -141,19 +141,19 @@ internal class CsDeclarationProvider
             if (typeReference.TypeDefinition.Is(CsSpecialType.NullableT))
             {
                 // typeRefernceが元々Nullable<T>
-                return typeReference.WithNullability(true);
+                return typeReference.WithAnnotation(true);
             }
             else
             {
                 // 生の値型をNullable<T>でラップ
-                var nullableValueType = SpecialType.NullableT.WithTypeArgs(EquatableArray.Create(EquatableArray.Create(typeReference.WithNullability(false))));
-                return nullableValueType.WithNullability(true);
+                var nullableValueType = SpecialType.NullableT.WithTypeArgs(EquatableArray.Create(EquatableArray.Create(typeReference.WithAnnotation(false))));
+                return nullableValueType.WithAnnotation(true);
             }
         }
         else
         {
             // 参照型
-            return typeReference.WithNullability(true);
+            return typeReference.WithAnnotation(true);
         }
     }
 
