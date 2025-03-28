@@ -39,9 +39,9 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
             if (_nameWithGenericArgs is not null)
                 return _nameWithGenericArgs;
 
-            if (this is CsGenericDefinableTypeDeclaration { GenericTypeParams: { IsDefaultOrEmpty: false } genericTypeParams })
+            if (!GenericTypeParams.IsDefaultOrEmpty)
             {
-                _nameWithGenericArgs = $"{Name}<{string.Join(",", genericTypeParams.Values.Select(v => v.Name))}>";
+                _nameWithGenericArgs = $"{Name}<{string.Join(",", GenericTypeParams.Values.Select(v => v.Name))}>";
             }
             else
             {

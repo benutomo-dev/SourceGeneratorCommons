@@ -19,7 +19,8 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
         SimpleTypeName,
         ReflectionFullTypeName,
         SourceEmbeddingFullTypeName,
-        Cref,
+        FullCref,
+        SimpleCref,
     }
 
     public CsTypeDeclaration TypeDefinition { get; }
@@ -30,7 +31,9 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
 
     public string GlobalReference => _globalReference ??= ToString(TypeNameEmitMode.SourceEmbeddingFullTypeName);
 
-    public string Cref => _cref ??= ToString(TypeNameEmitMode.Cref);
+    public string SimpleCref => _simpleCref ??= ToString(TypeNameEmitMode.SimpleCref);
+
+    public string Cref => _cref ??= ToString(TypeNameEmitMode.FullCref);
 
     string INullableRefarences.NullablePatternInternalReference => _nullableInternalReference ?? $"{InternalReference}?";
 
@@ -41,6 +44,7 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
     Task ILazyConstructionRoot.ConstructionFullCompleted => ConstructionFullCompleted;
 
     private string? _cref;
+    private string? _simpleCref;
     private string? _globalReference;
     private string? _internalReference;
     private string? _nullableGlobalReference;
@@ -334,7 +338,7 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
             }
             else
             {
-                if (mode != TypeNameEmitMode.SimpleTypeName)
+                if (mode != TypeNameEmitMode.SimpleTypeName && mode != TypeNameEmitMode.SimpleCref)
                 {
                     if (typeDefinition.Container is CsTypeDeclaration containerType)
                     {
@@ -373,15 +377,31 @@ class CsTypeRef : IEquatable<CsTypeRef>, ILazyConstructionRoot, ILazyConstructio
 
             if (currentTypeArgs.Length > 0)
             {
-                builder.Append(mode == TypeNameEmitMode.Cref ? '{' : '<');
+                var isCref = mode is TypeNameEmitMode.FullCref or TypeNameEmitMode.SimpleCref;
+
+                builder.Append(isCref ? '{' : '<');
                 for (int i = 0; i < currentTypeArgs.Length; i++)
                 {
-                    builder.Append(mode == TypeNameEmitMode.Cref ? currentTypeArgs[i].Cref : currentTypeArgs[i].GlobalReference);
+                    switch (mode)
+                    {
+                        case TypeNameEmitMode.SimpleCref:
+                            builder.Append(currentTypeArgs[i].SimpleCref);
+                            break;
+                        case TypeNameEmitMode.FullCref:
+                            builder.Append(currentTypeArgs[i].Cref);
+                            break;
+                        case TypeNameEmitMode.SimpleTypeName:
+                            builder.Append(currentTypeArgs[i].InternalReference);
+                            break;
+                        default:
+                            builder.Append(isCref ? currentTypeArgs[i].Cref : currentTypeArgs[i].GlobalReference);
+                            break;
+                    }
 
                     if (i != currentTypeArgs.Length - 1)
                         builder.Append(',');
                 }
-                builder.Append(mode == TypeNameEmitMode.Cref ? '}' : '>');
+                builder.Append(isCref ? '}' : '>');
             }
         }
 

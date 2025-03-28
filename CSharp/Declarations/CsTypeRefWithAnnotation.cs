@@ -66,6 +66,8 @@ internal struct CsTypeRefWithAnnotation : IEquatable<CsTypeRefWithAnnotation>, I
         }
     }
 
+    public string SimpleCref => Type.SimpleCref;
+
     public string Cref => Type.Cref;
 
 
