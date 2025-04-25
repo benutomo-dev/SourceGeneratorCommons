@@ -9,6 +9,7 @@
     <Import_RootNamespace>SourceGeneratorCommons</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\CompilationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Collections\Generic\EquatableDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsAttributeTarget.cs" />
@@ -69,9 +70,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)CodeAnalysysExtensions\" />
   </ItemGroup>
   <Import Project="$(MSBuildThisFileDirectory)SourceGeneratorCommons.props" />
 </Project>

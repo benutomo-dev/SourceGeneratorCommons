@@ -116,7 +116,7 @@ internal class CsDeclarationProvider
 
     internal CsTypeRef? GetTypeReferenceByMetadataName(string fullyQualifiedMetadataName)
     {
-        var typeSymbol = Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+        var typeSymbol = Compilation.GetFirstTypeByMetadataName(fullyQualifiedMetadataName);
 
         if (typeSymbol is null)
             return null;
