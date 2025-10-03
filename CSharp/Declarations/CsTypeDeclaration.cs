@@ -260,7 +260,7 @@ abstract class CsTypeDeclaration : ITypeContainer, IEquatable<CsTypeDeclaration>
         ThrowIfInitializeNotFullCompleted();
 
         var hash = new HashCode();
-        hash.Add(base.GetHashCode());
+        // hash.Add(base.GetHashCode()); baseはobjectなので、同一性の判定には使用してはいけない
         hash.Add(Container);
         hash.Add(Name);
         return hash.ToHashCode();
