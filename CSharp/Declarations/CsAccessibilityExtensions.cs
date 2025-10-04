@@ -20,4 +20,26 @@ static class CsAccessibilityExtensions
         };
         return cSharpAccessibility;
     }
+    public static (CsAccessibility Property, CsAccessibility Getter, CsAccessibility Setter) GetPropertyAccessibilitySet(this IPropertySymbol propertySymbol)
+    {
+        var propertyAccessibility = propertySymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+        var getterAccessibility = getMethodOverwrideAccessibility(propertyAccessibility, propertySymbol.GetMethod);
+        var setterAccessibility = getMethodOverwrideAccessibility(propertyAccessibility, propertySymbol.SetMethod);
+
+        return (propertyAccessibility, getterAccessibility, setterAccessibility);
+
+        static CsAccessibility getMethodOverwrideAccessibility(CsAccessibility propertyAccessibility, IMethodSymbol? methodSymbol)
+        {
+            if (methodSymbol is null)
+                return CsAccessibility.Default;
+
+            var methodAccessibility = methodSymbol.DeclaredAccessibility.ToCSharpAccessibility();
+
+            if (propertyAccessibility == methodAccessibility)
+                return CsAccessibility.Default;
+            else
+                return methodAccessibility;
+        }
+    }
 }

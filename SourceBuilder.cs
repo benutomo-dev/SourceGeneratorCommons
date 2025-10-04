@@ -363,6 +363,155 @@ internal class SourceBuilder : IDisposable
         }
     }
 
+    public _BlockEndDisposable BeginPropertyDefinitionBlock(CsProperty propertyDefinitionInfo, bool isPartial = true, string? propertyDeclarationLineTail = null)
+    {
+        PutIndentSpace();
+        Append(propertyDefinitionInfo.Accessibility switch
+        {
+            CsAccessibility.Public => "public ",
+            CsAccessibility.Internal => "internal ",
+            CsAccessibility.Protected => "protected ",
+            CsAccessibility.ProtectedInternal => "protected internal ",
+            CsAccessibility.Private => "private ",
+            _ => "",
+        });
+        if (propertyDefinitionInfo.IsReqired)
+            Append("reqired ");
+        if (propertyDefinitionInfo.IsStatic)
+            Append("static ");
+        Append(propertyDefinitionInfo.MethodModifier switch
+        {
+            CsMethodModifier.SealedOverride => "sealed override ",
+            CsMethodModifier.Override => "override ",
+            CsMethodModifier.Virtual => "virtual ",
+            CsMethodModifier.Abstract => "abstract ",
+            _ => "",
+        });
+        if (isPartial)
+            Append("partial ");
+        Append(propertyDefinitionInfo.ReturnModifier switch
+        {
+            CsReturnModifier.RefReadonly => "ref readonly ",
+            CsReturnModifier.Ref => "ref ",
+            _ => "",
+        });
+        Append(propertyDefinitionInfo.Type.GlobalReference);
+        Append(" ");
+        Append(propertyDefinitionInfo.Name);
+        if (!propertyDefinitionInfo.Params.IsDefaultOrEmpty)
+        {
+            Append("[");
+
+            if (!propertyDefinitionInfo.Params.IsDefaultOrEmpty)
+            {
+                for (int i = 0; i < propertyDefinitionInfo.Params.Length; i++)
+                {
+                    var param = propertyDefinitionInfo.Params[i];
+
+                    if (!param.Attributes.IsDefaultOrEmpty)
+                    {
+                        foreach (var attribute in param.Attributes.Values)
+                        {
+                            Append(attribute.SourceText);
+                        }
+                        Append(" ");
+                    }
+
+                    if (param.IsScoped)
+                        Append("scoped ");
+
+                    Append(param.Modifier switch
+                    {
+                        CsParamModifier.RefReadOnly => "ref readonly ",
+                        CsParamModifier.In => "in ",
+                        CsParamModifier.Ref => "ref ",
+                        CsParamModifier.Out => "out ",
+                        _ => "",
+                    });
+
+                    Append(param.Type.GlobalReference);
+
+                    Append(" ");
+
+                    Append(param.Name);
+
+                    if (param is CsMethodParamWithDefaultValue paramWithDefaultValue)
+                    {
+                        Append(" = ");
+                        Append(SymbolDisplay.FormatPrimitive(paramWithDefaultValue.DefaultValue!, quoteStrings: true, useHexadecimalNumbers: false));
+                    }
+
+                    if (i < propertyDefinitionInfo.Params.Length - 1)
+                    {
+                        Append(", ");
+                    }
+                }
+            }
+
+            Append("]");
+        }
+        if (propertyDeclarationLineTail is not null)
+        {
+            Append(propertyDeclarationLineTail);
+        }
+        AppendLine("");
+
+        return BeginBlock();
+    }
+
+    public _BlockEndDisposable BeginGetterBlock(CsPropertyGetter propertyGetterInfo, string? propertyDeclarationLineTail = null)
+    {
+        PutIndentSpace();
+        Append(propertyGetterInfo.Accessibility switch
+        {
+            CsAccessibility.Public => "public ",
+            CsAccessibility.Internal => "internal ",
+            CsAccessibility.Protected => "protected ",
+            CsAccessibility.ProtectedInternal => "protected internal ",
+            CsAccessibility.Private => "private ",
+            _ => "",
+        });
+        Append("get");
+
+        if (propertyDeclarationLineTail is not null)
+        {
+            Append(propertyDeclarationLineTail);
+        }
+
+        AppendLine("");
+
+        return BeginBlock();
+    }
+
+    public _BlockEndDisposable BeginSetterBlock(CsPropertySetter propertySetterInfo, string? propertyDeclarationLineTail = null)
+    {
+        PutIndentSpace();
+        Append(propertySetterInfo.Accessibility switch
+        {
+            CsAccessibility.Public => "public ",
+            CsAccessibility.Internal => "internal ",
+            CsAccessibility.Protected => "protected ",
+            CsAccessibility.ProtectedInternal => "protected internal ",
+            CsAccessibility.Private => "private ",
+            _ => "",
+        });
+
+        if (propertySetterInfo.IsInitOnly)
+            Append("init");
+        else
+            Append("set");
+
+        if (propertyDeclarationLineTail is not null)
+        {
+            Append(" ");
+            Append(propertyDeclarationLineTail);
+        }
+
+        AppendLine("");
+
+        return BeginBlock();
+    }
+
     public _BlockEndDisposable BeginMethodDefinitionBlock(CsMethod methodDefinitionInfo, bool isPartial = true, string? methodDeclarationLineTail = null)
     {
         PutIndentSpace();

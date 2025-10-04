@@ -7,9 +7,21 @@ namespace SourceGeneratorCommons.CSharp.Declarations;
 
 internal static class CsMethodModifierExtensions
 {
+    public static CsMethodModifier ToCsMethodModifier(this IPropertySymbol propertySymbol)
+    {
+        var methodModifier = ToCsMethodModifierCore(propertySymbol.IsSealed, propertySymbol.IsOverride, propertySymbol.IsAbstract, propertySymbol.IsVirtual);
+        return methodModifier;
+    }
+
     public static CsMethodModifier ToCsMethodModifier(this IMethodSymbol methodSymbol)
     {
-        var methodModifier = (methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual) switch
+        var methodModifier = ToCsMethodModifierCore(methodSymbol.IsSealed, methodSymbol.IsOverride, methodSymbol.IsAbstract, methodSymbol.IsVirtual);
+        return methodModifier;
+    }
+
+    private static CsMethodModifier ToCsMethodModifierCore(bool isSealed, bool isOverride, bool isAbstract, bool isVirtual)
+    {
+        var methodModifier = (isSealed, isOverride, isAbstract, isVirtual) switch
         {
             (_, _, _, true) => CsMethodModifier.Virtual,
             (_, _, true, _) => CsMethodModifier.Abstract,

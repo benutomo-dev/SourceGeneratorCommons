@@ -157,6 +157,13 @@ internal class CsDeclarationProvider
         }
     }
 
+    internal CsProperty GetPropertyDeclaration(IPropertySymbol propertySymbol)
+    {
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        return GetPropertyDeclarationInternal(propertySymbol, nest: 0);
+    }
+
     internal CsMethod GetMethodDeclaration(IMethodSymbol methodSymbol)
     {
         _rootCancellationToken.ThrowIfCancellationRequested();
@@ -190,6 +197,33 @@ internal class CsDeclarationProvider
             return new (cachedTypeReference, isNullableIfRefereceType);
 
         return new (CreateAndCacheTypeReference(typeDeclaration, typeSymbol, nest), isNullableIfRefereceType);
+    }
+
+    private CsProperty GetPropertyDeclarationInternal(IPropertySymbol propertySymbol, int nest)
+    {
+        nest++;
+        if (nest > MaxNestCount) throw new InvalidOperationException("呼出しの再帰が深すぎます。");
+        _rootCancellationToken.ThrowIfCancellationRequested();
+
+        var type = GetTypeReferenceFromCachedTypeReferenceFirst(propertySymbol.Type, isSystemSymbolParameter: false, nest);
+
+        var methodModifier = propertySymbol.ToCsMethodModifier();
+
+        var returnModifier = propertySymbol.ToCsReturnModifier();
+
+        var indexerParams = propertySymbol.Parameters.Select(v => BuildMethodParam(v, nest)).ToImmutableArray();
+
+        var accessibility = propertySymbol.GetPropertyAccessibilitySet();
+
+        CsPropertyGetter? getter = propertySymbol.IsWriteOnly
+            ? null
+            : new CsPropertyGetter(accessibility.Getter);
+
+        CsPropertySetter? setter = propertySymbol.IsReadOnly
+            ? null
+            : new CsPropertySetter(accessibility.Setter, propertySymbol.SetMethod.IsInitOnly);
+
+        return new CsProperty(propertySymbol.Name, type, returnModifier, propertySymbol.IsStatic, propertySymbol.IsRequired, indexerParams, accessibility.Property, methodModifier, getter, setter);
     }
 
     private CsMethod GetMethodDeclarationInternal(IMethodSymbol methodSymbol, int nest)

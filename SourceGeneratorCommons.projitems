@@ -28,6 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsExtensionMethod.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsMethodModifierExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsMethodParamWithDefaultValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsProperty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsReturnModifierExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsSpecialType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharp\Declarations\CsStruct.cs" />
